@@ -17,8 +17,8 @@ std::shared_ptr<renderbox::Object> cameraRig;
 
 std::shared_ptr<renderbox::Object> particles;
 
-float cameraDistance = 40.0f;
-float cameraAngle[] = {0.0f, 45.0f};
+float cameraDistance = 30.0f;
+float cameraAngle[] = {0.0f, 90.0f};
 
 
 int main() {
@@ -30,13 +30,13 @@ int main() {
 
     // Init simulation
 
-    SnowSolver solver(1, {10, 10, 10});
+    SnowSolver solver(1, {10, 2, 10});
 
     unsigned int numParticles = 0;
-    for (float x = 3; x <= 5; x += 0.5) {
-        for (float y = 3; y <= 5; y += 0.5) {
-            for (float z = 7; z <= 10; z += 0.5) {
-                solver.particleNodes.push_back(ParticleNode(glm::vec3(x, y, z), 1.f/8));
+    for (float x = 4; x <= 6; x += 0.25) {
+        for (float y = 0; y <= 1; y += 0.25) {
+            for (float z = 7; z <= 10; z += 0.25) {
+                solver.particleNodes.emplace_back(glm::vec3(x, y, z), 50.f/64);
                 numParticles++;
             }
         }
@@ -52,11 +52,21 @@ int main() {
     particles = std::make_shared<renderbox::Object>();
     scene->addChild(particles);
 
-    auto snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(0.4, 0.4, 0.4);
+    auto snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(0.2, 0.2, 0.2);
     auto snowParticleMaterial = std::make_shared<renderbox::MeshBasicMaterial>(renderbox::vec3(0.25, 0.25, 0.25));
     for (auto i = 0; i < numParticles; i++) {
         particles->addChild(std::make_shared<renderbox::Object>(snowParticleGeometry, snowParticleMaterial));
+
+        particles->children[i]->setTranslation(solver.particleNodes[i].position);
+//        std::cout << "position=" << solver.particleNodes[i].position << std::endl;
     }
+
+    // Init floor
+    auto floor = std::make_shared<renderbox::Object>(
+            std::make_shared<renderbox::BoxGeometry>(5, 5, 0.5),
+            std::make_shared<renderbox::MeshBasicMaterial>(glm::vec3(0, 0, 0.5)));
+    floor->setTranslation({5, 5, -0.25});
+    scene->addChild(floor);
 
     // Init camera
     camera = std::make_shared<renderbox::PerspectiveCamera>(
@@ -65,14 +75,18 @@ int main() {
     cameraRig = std::make_shared<renderbox::Object>();
     cameraRig->addChild(camera);
     cameraRig->rotate(glm::vec3(1.0f, 0, 0), glm::radians(cameraAngle[1]));
-    cameraRig->setTranslation({5, 5, 0});
+    cameraRig->setTranslation({5, 5, 5});
 
     // Render loop
 
-    unsigned int nFrames = 0;
+    float timeStep = 1e-5;
+    unsigned int nTicks = 0;
+    auto ticksPerFrame = static_cast<unsigned int>(1.f / 1000 / timeStep);
+
+    std::cout << "#ticks/frame=" << ticksPerFrame << std::endl;
 
     double lastTime = glfwGetTime();
-    int timedFrames = 0;
+    unsigned int timedFrames = 0;
     while (!glfwWindowShouldClose(window)) {
 
         double currentTime = glfwGetTime();
@@ -84,23 +98,29 @@ int main() {
             timedFrames++;
         }
 
-        glfwPollEvents();
+        // Draw
 
-        // Update per frame
-
-        solver.update(1e-5, nFrames);
+        std::cout << "#ticks=" << nTicks << " time=" << timeStep * nTicks << std::endl;
         for (auto i = 0; i < numParticles; i++) {
-            particles->children[i]->setTranslation(solver.particleNodes[i].position);
+//            std::cout
+//                    << " position=" << solver.particleNodes[i].position
+//                    << " velocity=" << const_cast<ParticleNode const &>(solver.particleNodes[i]).velocity(nTicks)
+//                    << std::endl;
 
-            std::cout
-                << "position=" << solver.particleNodes[i].position
-                << " velocity=" << const_cast<ParticleNode const &>(solver.particleNodes[i]).velocity(nFrames) << std::endl;
+            particles->children[i]->setTranslation(solver.particleNodes[i].position);
         }
         renderer->render(scene.get(), camera.get(), renderTarget.get());
 
         glfwSwapBuffers(window);
 
-        nFrames++;
+        // Update
+
+        glfwPollEvents();
+
+        for (auto tick = 0; tick < ticksPerFrame; tick++) {
+            solver.update(timeStep, nTicks);
+            nTicks++;
+        }
 
     }
 

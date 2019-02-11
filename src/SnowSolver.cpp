@@ -16,7 +16,7 @@ SnowSolver::SnowSolver(float h, glm::uvec3 const &size) : h(h), invh(1 / h), siz
     for (auto x = 0; x < size.x; x++) {
         for (auto y = 0; y < size.y; y++) {
             for (auto z = 0; z < size.z; z++) {
-                gridNodes.push_back(GridNode(glm::vec3(x, y, z) * h, glm::uvec3(x, y, z)));
+                gridNodes.emplace_back(glm::vec3(x, y, z) * h, glm::uvec3(x, y, z));
             }
         }
     }
@@ -92,11 +92,16 @@ void SnowSolver::update(float delta_t, unsigned int n) {
     }
 
     // 3. Compute grid forces //////////////////////////////////////////////////////////////////////////////////////////
+    // 4. Update velocities on grid ////////////////////////////////////////////////////////////////////////////////////
+    // 5. Grid-based body collisions ///////////////////////////////////////////////////////////////////////////////////
+    // 6. Solve the linear system //////////////////////////////////////////////////////////////////////////////////////
 
-    LOG(INFO) << "Step 3" << std::endl;
+    LOG(INFO) << "Step 3, 4, 5, 6" << std::endl;
 
     for (auto &gridNode : gridNodes) {
         auto force = glm::vec3();
+
+        // 3
 
         for (auto const &particleNode : particleNodes) {
             auto jp = glm::determinant(particleNode.deformPlastic);
@@ -108,54 +113,48 @@ void SnowSolver::update(float delta_t, unsigned int n) {
 
             force += particleNode.volume0 *
                     (2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
-                        glm::transpose(particleNode.deformElastic) + lambda * (je - 1) * je * glm::mat3(1)) *
+                        glm::transpose(particleNode.deformElastic) +
+                        lambda * (je - 1) * je * glm::mat3(1)) *
                     nabla_weight(gridNode, particleNode);
         }
 
-        gridNode.force = - force + glm::vec3(0, 0, - 9.81 * gridNode.mass);
-    }
+        gridNode.force = - force + glm::vec3(0, 0, - 9.8 * gridNode.mass);
 
-    // 4. Update velocities on grid ////////////////////////////////////////////////////////////////////////////////////
-
-    LOG(INFO) << "Step 4" << std::endl;
-
-    for (auto &gridNode : gridNodes) {
-        gridNode.velocity_star = gridNode.velocity(n);
+        // 4
 
         if (gridNode.mass > 0) {
-            gridNode.velocity_star += delta_t * gridNode.force / gridNode.mass;
+            gridNode.velocity_star = gridNode.velocity(n) + delta_t * gridNode.force / gridNode.mass;
         }
-    }
 
-    // 5. Grid-based body collisions ///////////////////////////////////////////////////////////////////////////////////
+        // 5
 
-    LOG(INFO) << "Step 5" << std::endl;
-
-    for (auto &gridNode : gridNodes) {
         handleNodeCollisionVelocityUpdate(gridNode);
-    }
 
-    // 6. Solve the linear system //////////////////////////////////////////////////////////////////////////////////////
+        // 6
 
-    LOG(INFO) << "Step 6" << std::endl;
-
-    // Explicit integration
-    for (auto &gridNode : gridNodes) {
         gridNode.velocity(n + 1) = gridNode.velocity_star;
+
     }
 
     // 7. Update deformation gradient //////////////////////////////////////////////////////////////////////////////////
+    // 8. Update particle velocities ///////////////////////////////////////////////////////////////////////////////////
+    // 9. Particle-based body collisions ///////////////////////////////////////////////////////////////////////////////
+    // 10. Update particle positions ///////////////////////////////////////////////////////////////////////////////////
 
-    LOG(INFO) << "Step 7" << std::endl;
+    LOG(INFO) << "Step 7, 8, 9, 10" << std::endl;
 
     for (auto &particleNode : particleNodes) {
 
+        // 7
+
         glm::mat3 deform = particleNode.deformElastic * particleNode.deformPlastic;
 
-        glm::vec3 nabla_v;
-        for (auto const &gridNode : gridNodes) {
-            nabla_v += gridNode.velocity(n + 1) * nabla_weight(gridNode, particleNode);
+        glm::vec3 nabla_v = glm::vec3();
+        for (auto &gridNode : gridNodes) {
+            auto w = nabla_weight(gridNode, particleNode);
+            nabla_v += gridNode.velocity(n + 1) * w;
         }
+
         glm::mat3 multiplier = glm::mat3(1) + delta_t * glm::mat3(nabla_v.x, 0, 0, 0, nabla_v.y, 0, 0, 0, nabla_v.z);
 
         glm::mat3 deform_prime = multiplier * deform;
@@ -168,17 +167,9 @@ void SnowSolver::update(float delta_t, unsigned int n) {
         e = glm::clamp(e, 1 - criticalCompression, 1 + criticalStretch);
 
         particleNode.deformElastic = u * glm::mat3(e.x, 0, 0, 0, e.y, 0, 0, 0, e.z) * v;
-        particleNode.deformPlastic = glm::transpose(v) *
-                glm::mat3(1 / e.x, 0, 0, 0, 1 / e.y, 0, 0, 0, 1 / e.z) *
-                glm::transpose(u) * deform_prime;
+        particleNode.deformPlastic = glm::inverse(particleNode.deformElastic) * deform_prime;
 
-    }
-
-    // 8. Update particle velocities ///////////////////////////////////////////////////////////////////////////////////
-
-    LOG(INFO) << "Step 8" << std::endl;
-
-    for (auto &particleNode : particleNodes) {
+        // 8
 
         auto v_pic = glm::vec3();
         auto v_flip = particleNode.velocity(n);
@@ -193,23 +184,15 @@ void SnowSolver::update(float delta_t, unsigned int n) {
 
         particleNode.velocity_star = (1 - alpha) * v_pic + alpha * v_flip;
 
-    }
+        // 9
 
-    // 9. Particle-based body collisions ///////////////////////////////////////////////////////////////////////////////
-
-    LOG(INFO) << "Step 9" << std::endl;
-
-    for (auto &particleNode : particleNodes) {
         handleNodeCollisionVelocityUpdate(particleNode);
         particleNode.velocity(n + 1) = particleNode.velocity_star;
-    }
 
-    // 10. Update particle positions ///////////////////////////////////////////////////////////////////////////////////
+        // 10
 
-    LOG(INFO) << "Step 10" << std::endl;
-
-    for (auto &particleNode : particleNodes) {
         particleNode.position += delta_t * particleNode.velocity(n + 1);
+
     }
 
 }

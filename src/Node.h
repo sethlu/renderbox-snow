@@ -28,8 +28,8 @@ public:
 protected:
 
     float mass;
-    glm::vec3 velocity0;
-    glm::vec3 velocity1;
+    glm::vec3 velocity0 = glm::vec3();
+    glm::vec3 velocity1 = glm::vec3();
 
     glm::vec3 &velocity(unsigned int n) {
         if ((n & 0x1) == 0) {
