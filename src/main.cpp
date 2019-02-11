@@ -30,7 +30,7 @@ int main() {
 
     // Init simulation
 
-    SnowSolver solver(1, {10, 10, 10});
+    SnowSolver solver(0.1, {100, 100, 100});
 
     unsigned int numParticles = 0;
     for (float x = 4; x <= 6; x += 0.2) {
