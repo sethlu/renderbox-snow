@@ -30,12 +30,12 @@ int main() {
 
     // Init simulation
 
-    SnowSolver solver(1, {10, 2, 10});
+    SnowSolver solver(1, {10, 10, 10});
 
     unsigned int numParticles = 0;
-    for (float x = 4; x <= 6; x += 0.25) {
-        for (float y = 0; y <= 1; y += 0.25) {
-            for (float z = 7; z <= 10; z += 0.25) {
+    for (float x = 4; x <= 6; x += 0.2) {
+        for (float y = 4; y <= 6; y += 0.2) {
+            for (float z = 4; z <= 6; z += 0.2) {
                 solver.particleNodes.emplace_back(glm::vec3(x, y, z), 50.f/64);
                 numParticles++;
             }
@@ -52,7 +52,7 @@ int main() {
     particles = std::make_shared<renderbox::Object>();
     scene->addChild(particles);
 
-    auto snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(0.2, 0.2, 0.2);
+    auto snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(0.19, 0.19, 0.19);
     auto snowParticleMaterial = std::make_shared<renderbox::MeshBasicMaterial>(renderbox::vec3(0.25, 0.25, 0.25));
     for (auto i = 0; i < numParticles; i++) {
         particles->addChild(std::make_shared<renderbox::Object>(snowParticleGeometry, snowParticleMaterial));
