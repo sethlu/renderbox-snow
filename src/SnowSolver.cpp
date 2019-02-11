@@ -99,9 +99,21 @@ void SnowSolver::update(float delta_t, unsigned int n) {
 
         for (auto &particleNode : particleNodes) {
             auto particledNodeDensity0 = 0.f;
-            for (auto const &gridNode : gridNodes) {
-                particledNodeDensity0 += gridNode.density0 * weight(gridNode, particleNode);
+
+            // Nearby weighted grid nodes
+            auto gmin = glm::uvec3((particleNode.position / h) - glm::vec3(1));
+            auto gmax = glm::uvec3((particleNode.position / h) + glm::vec3(2));
+            for (auto gx = gmin.x; gx <= gmax.x; gx++) {
+                for (auto gy = gmin.y; gy <= gmax.y; gy++) {
+                    for (auto gz = gmin.z; gz <= gmax.z; gz++) {
+                        auto &gridNode = this->gridNode(gx, gy, gz);
+
+                        particledNodeDensity0 += gridNode.density0 * weight(gridNode, particleNode);
+
+                    }
+                }
             }
+
             particleNode.volume0 = particleNode.mass / particledNodeDensity0;
         }
 
