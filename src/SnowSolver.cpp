@@ -98,7 +98,7 @@ void SnowSolver::update(float delta_t, unsigned int n) {
         }
 
         for (auto &particleNode : particleNodes) {
-            auto particledNodeDensity0 = 0.f;
+            auto particleNodeDensity0 = 0.f;
 
             // Nearby weighted grid nodes
             auto gmin = glm::uvec3((particleNode.position / h) - glm::vec3(1));
@@ -108,13 +108,13 @@ void SnowSolver::update(float delta_t, unsigned int n) {
                     for (auto gz = gmin.z; gz <= gmax.z; gz++) {
                         auto &gridNode = this->gridNode(gx, gy, gz);
 
-                        particledNodeDensity0 += gridNode.density0 * weight(gridNode, particleNode);
+                        particleNodeDensity0 += gridNode.density0 * weight(gridNode, particleNode);
 
                     }
                 }
             }
 
-            particleNode.volume0 = particleNode.mass / particledNodeDensity0;
+            particleNode.volume0 = particleNode.mass / particleNodeDensity0;
         }
 
     }
