@@ -279,7 +279,7 @@ void SnowSolver::handleNodeCollisionVelocityUpdate(Node &node) {
         if (glm::length(v_t) <= - mu * v_n) {
             v_rel = glm::vec3(0);
         } else {
-            v_rel = v_t + mu * v_n + glm::normalize(v_t);
+            v_rel = v_t + mu * v_n * glm::normalize(v_t);
         };
 
         node.velocity_star = v_rel + v_co;
