@@ -42,7 +42,7 @@ int main() {
         }
     }
 
-    LOG(WARNING) << "#particles=" << numParticles << std::endl;
+    LOG(INFO) << "#particles=" << numParticles << std::endl;
 
     // Init scene
 

@@ -17,8 +17,16 @@ public:
 
     void update(float delta_t, unsigned int n);
 
+    GridNode &gridNode(unsigned int x, unsigned int y, unsigned int z) {
+        return gridNodes[(x * size.y + y) * size.z + z];
+    }
+
     GridNode &gridNode(glm::uvec3 location) {
-        return gridNodes[(location.x * size.y + location.y) * size.z + location.z];
+        return gridNode(location.x, location.y, location.z);
+    }
+
+    bool isValidGridNode(unsigned int x, unsigned int y, unsigned int z) {
+        return x >= 0 && y >= 0 && z >= 0 && x < size.x && y < size.y && z < size.z;
     }
 
 private:
