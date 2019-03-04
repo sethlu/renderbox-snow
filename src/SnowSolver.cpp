@@ -270,7 +270,7 @@ void SnowSolver::update(float delta_t, unsigned int n) {
 void SnowSolver::handleNodeCollisionVelocityUpdate(Node &node) {
 
     // Hard-coded floor collision & it's not moving anywhere
-    if (node.position.z <= 0) {
+    if (node.position.z <= 1) {
         auto v_co = glm::vec3(0); // Velocity of collider object
         auto n = glm::vec3(0, 0, 1); // Normal
         auto mu = 1.f; // Coefficient of friction

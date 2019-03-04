@@ -17,7 +17,7 @@ std::shared_ptr<renderbox::Object> cameraRig;
 
 std::shared_ptr<renderbox::Object> particles;
 
-float cameraDistance = 30.0f;
+float cameraDistance = 20.0f;
 float cameraAngle[] = {0.0f, 90.0f};
 
 
@@ -30,13 +30,20 @@ int main() {
 
     // Init simulation
 
-    SnowSolver solver(0.1, {100, 100, 100});
+    auto simulationSize = glm::vec3(10);
+    float simulationResolution = 4.f;
+    auto density = 920.f; // kg/m3
+    auto particleSize = 0.125f;
+
+    SnowSolver solver(1 / simulationResolution, simulationSize * simulationResolution);
 
     unsigned int numParticles = 0;
-    for (float x = 4; x <= 6; x += 0.2) {
-        for (float y = 4; y <= 6; y += 0.2) {
-            for (float z = 4; z <= 6; z += 0.2) {
-                solver.particleNodes.emplace_back(glm::vec3(x, y, z), 50.f/64);
+    for (float x = 1; x <= 9; x += particleSize) {
+        for (float y = 1; y <= 9; y += particleSize) {
+            for (float z = 1; z <= 9; z += particleSize) {
+                auto position = glm::vec3(x, y, z);
+                if (glm::length(position - glm::vec3(5, 5, 7)) > 1.5) continue;
+                solver.particleNodes.emplace_back(position, density * powf(particleSize, 3));
                 numParticles++;
             }
         }
@@ -52,7 +59,7 @@ int main() {
     particles = std::make_shared<renderbox::Object>();
     scene->addChild(particles);
 
-    auto snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(0.19, 0.19, 0.19);
+    auto snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(particleSize, particleSize, particleSize);
     auto snowParticleMaterial = std::make_shared<renderbox::MeshBasicMaterial>(renderbox::vec3(0.25, 0.25, 0.25));
     for (auto i = 0; i < numParticles; i++) {
         particles->addChild(std::make_shared<renderbox::Object>(snowParticleGeometry, snowParticleMaterial));
@@ -61,12 +68,17 @@ int main() {
 //        std::cout << "position=" << solver.particleNodes[i].position << std::endl;
     }
 
-    // Init floor
+    // Init hard-coded floor
     auto floor = std::make_shared<renderbox::Object>(
-            std::make_shared<renderbox::BoxGeometry>(5, 5, 0.5),
-            std::make_shared<renderbox::MeshBasicMaterial>(glm::vec3(0, 0, 0.5)));
-    floor->setTranslation({5, 5, -0.25});
+            std::make_shared<renderbox::BoxGeometry>(10, 10, 1),
+            std::make_shared<renderbox::MeshLambertMaterial>(glm::vec3(0, 0, 1)));
+    floor->setTranslation({5, 5, 0.5});
     scene->addChild(floor);
+
+    // Init light
+    auto light = std::make_shared<renderbox::PointLight>(glm::vec3(100));
+    light->setTranslation({5, 5, 20});
+    scene->addChild(light);
 
     // Init camera
     camera = std::make_shared<renderbox::PerspectiveCamera>(
@@ -74,14 +86,15 @@ int main() {
     camera->setTranslation(glm::vec3(0, 0, cameraDistance));
     cameraRig = std::make_shared<renderbox::Object>();
     cameraRig->addChild(camera);
-    cameraRig->rotate(glm::vec3(1.0f, 0, 0), glm::radians(cameraAngle[1]));
-    cameraRig->setTranslation({5, 5, 5});
+    cameraRig->rotate({1, 0, 0}, glm::radians(cameraAngle[1]));
+    cameraRig->rotate({0, 0, 1}, glm::radians(cameraAngle[0]));
+    cameraRig->setTranslation({5, 5, 3 + sqrt(2)});
 
     // Render loop
 
     float timeStep = 1e-5;
     unsigned int nTicks = 0;
-    auto ticksPerFrame = static_cast<unsigned int>(1.f / 1000 / timeStep);
+    auto ticksPerFrame = 1;
 
     std::cout << "#ticks/frame=" << ticksPerFrame << std::endl;
 
