@@ -6,8 +6,8 @@
 #include "logging.h"
 
 
-typedef Eigen::Matrix<float,3,3> eigen_matrix3;
-typedef Eigen::Matrix<float,3,1> eigen_vector3;
+typedef Eigen::Matrix<float, 3, 3> eigen_matrix3;
+typedef Eigen::Matrix<float, 3, 1> eigen_vector3;
 
 
 SnowSolver::SnowSolver(float h, glm::uvec3 const &size) : h(h), invh(1 / h), size(size) {
@@ -129,7 +129,7 @@ void SnowSolver::update(float delta_t, unsigned int n) {
     // 3
 
     for (auto &gridNode : gridNodes) {
-        gridNode.force = glm::vec3(0, 0, - 9.8 * gridNode.mass);
+        gridNode.force = glm::vec3(0, 0, -9.8 * gridNode.mass);
     }
 
     for (auto const &particleNode : particleNodes) {
