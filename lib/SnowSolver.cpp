@@ -291,7 +291,7 @@ void SnowSolver::handleNodeCollisionVelocityUpdate(Node &node) {
         auto v_t = v_rel - n * v_n;
 
         // Sticking impulse
-        if (glm::length(v_t) <= - mu * v_n) {
+        if (glm::length(v_t) <= -mu * v_n) {
             v_rel = glm::vec3(0);
         } else {
             v_rel = v_t + mu * v_n * glm::normalize(v_t);

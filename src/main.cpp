@@ -4,7 +4,7 @@
 #define RENDERBOX_USE_GLFW
 #include "renderbox.h"
 
-#include "SnowSolver.h"
+#include "../lib/SnowSolver.h"
 
 
 std::unique_ptr<renderbox::OpenGLRenderer> renderer;

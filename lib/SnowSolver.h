@@ -54,11 +54,11 @@ private:
         if (absx < 1) {
             auto x2 = x * x;
             auto absx3 = x2 * absx;
-            return 0.5f * absx3 - x2 + 2.f/3;
+            return 0.5f * absx3 - x2 + 2.f / 3;
         } else if (absx < 2) {
             auto x2 = x * x;
             auto absx3 = x2 * absx;
-            return - 1.f/6 * absx3 + x2 - 2 * absx + 4.f/3;
+            return -1.f / 6 * absx3 + x2 - 2 * absx + 4.f / 3;
         }
         return 0;
     }
@@ -67,18 +67,18 @@ private:
         auto absx = fabs(x);
         if (absx < 1) {
             auto x2 = x * x;
-            return 3.f/2 * x2 - 2 * absx;
+            return 3.f / 2 * x2 - 2 * absx;
         } else if (absx < 2) {
             auto x2 = x * x;
-            return - 1.f/2 * x2 + 2 * absx - 2;
+            return -1.f / 2 * x2 + 2 * absx - 2;
         }
         return 0;
     }
 
     float n(glm::vec3 const &gridPosition, glm::vec3 const &particlePosition) {
         return n(invh * (particlePosition.x - gridPosition.x)) *
-            n(invh * (particlePosition.y - gridPosition.y)) *
-            n(invh * (particlePosition.z - gridPosition.z));
+               n(invh * (particlePosition.y - gridPosition.y)) *
+               n(invh * (particlePosition.z - gridPosition.z));
     }
 
     float n(unsigned i, glm::vec3 const &particlePosition) {
