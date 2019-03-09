@@ -140,7 +140,7 @@ void SnowSolver::update(float delta_t, unsigned int n) {
         auto mu = mu0 * e;
         auto lambda = lambda0 * e;
 
-        auto unweightedForce = particleNode.volume0 *
+        auto unweightedForce = -particleNode.volume0 *
                                (2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
                                 glm::transpose(particleNode.deformElastic) +
                                 lambda * (je - 1) * je * glm::mat3(1));
