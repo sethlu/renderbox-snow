@@ -22,10 +22,10 @@ V operator*(std::vector<V> const &a, std::vector<V> const &b) {
 }
 
 // Vector of vec3 dot product
-float operator*(std::vector<glm::vec3> const &a, std::vector<glm::vec3> const &b) {
+double operator*(std::vector<glm::dvec3> const &a, std::vector<glm::dvec3> const &b) {
     LOG_ASSERT(a.size() == b.size());
 
-    float result = {};
+    double result = {};
     for (size_t i = 0, n = a.size(); i < n; i++) {
         result += glm::dot(a[i], b[i]);
     }
@@ -35,7 +35,7 @@ float operator*(std::vector<glm::vec3> const &a, std::vector<glm::vec3> const &b
 
 // Scalar multiply to vector
 template<typename V>
-std::vector<V> operator*(float a, std::vector<V> const &b) {
+std::vector<V> operator*(double a, std::vector<V> const &b) {
 
     std::vector<V> result(b.size());
     for (size_t i = 0, n = b.size(); i < n; i++) {
@@ -73,7 +73,7 @@ std::vector<V> operator-(std::vector<V> const &a, std::vector<V> const &b) {
 
 // Vector tolerance check
 template<typename V>
-bool operator>(std::vector<V> const &a, float tolerance) {
+bool operator>(std::vector<V> const &a, double tolerance) {
 
     V result = {};
     for (size_t i = 0, n = a.size(); i < n; i++) {
@@ -84,9 +84,9 @@ bool operator>(std::vector<V> const &a, float tolerance) {
 }
 
 // Vector of vec3 tolerance check
-bool operator>(std::vector<glm::vec3> const &a, float tolerance) {
+bool operator>(std::vector<glm::dvec3> const &a, double tolerance) {
 
-    float result = {};
+    double result = {};
     for (size_t i = 0, n = a.size(); i < n; i++) {
         result += glm::dot(a[i], a[i]);
     }
@@ -101,12 +101,10 @@ bool operator>(std::vector<glm::vec3> const &a, float tolerance) {
  */
 template<typename V>
 void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V> const &x), std::vector<V> &x,
-                             std::vector<V> const &b, unsigned int k, float tolerance) {
+                             std::vector<V> const &b, int k, double tolerance) {
     std::vector<V> Ax(b.size());
 
-    // Initial guess x
-
-    // Calculate Ax
+    // Ax_0
     A(Ax, x);
 
     auto r = b - Ax;
@@ -146,6 +144,70 @@ void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V> const 
         Ap = Ar + beta * Ap;
 
     }
+
+    if (k > 0) LOG(VERBOSE) << "Converged at k=" << k << std::endl;
+    else
+        LOG(VERBOSE) << "Didn't converge" << std::endl;
+
+}
+
+/**
+ * Solves Ax = b
+ * The initial guess is passed in as x
+ * The result will be written in x
+ */
+template<typename C, typename V>
+void conjugateResidualSolver(C *instance, void (C::*A)(std::vector<V> &Ax, std::vector<V> const &x), std::vector<V> &x,
+                             std::vector<V> const &b, int k, double tolerance) {
+
+    std::cout << "solving" << std::endl;
+
+    std::vector<V> Ax(b.size());
+
+    // Ax_0
+    (instance->*A)(Ax, x);
+
+    auto r = b - Ax;
+    auto p = r;
+
+    std::vector<V> Ar(b.size());
+    (instance->*A)(Ar, r);
+    auto dot_r_Ar = r * Ar;
+
+    std::vector<V> Ap(b.size());
+    (instance->*A)(Ap, p);
+
+    while (k-- > 0 && r > tolerance) {
+
+        // r_k^T Ar_k
+        auto dot_r_Ar_k = dot_r_Ar;
+
+        // a_k
+        auto a = dot_r_Ar_k / (Ap * Ap);
+
+        // x_k+1
+        x = x + a * p;
+
+        // r_k+1
+        r = r - a * Ap;
+
+        // Ar_k+1
+        (instance->*A)(Ar, r);
+        dot_r_Ar = r * Ar;
+        // b_k
+        auto beta = dot_r_Ar / dot_r_Ar_k;
+
+        // p_k+1
+        p = r + beta * p;
+
+        // Ap_k+1
+        Ap = Ar + beta * Ap;
+
+    }
+
+    if (k > 0) LOG(VERBOSE) << "Converged at k=" << k << std::endl;
+    else
+        LOG(VERBOSE) << "Didn't converge" << std::endl;
 
 }
 
