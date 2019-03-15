@@ -118,6 +118,7 @@ void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V> const 
     A(Ap, p);
 
     while (k-- > 0 && r > tolerance) {
+        LOG(VERBOSE) << "Solving k=" << k << std::endl;
 
         // r_k^T Ar_k
         auto dot_r_Ar_k = dot_r_Ar;
@@ -175,6 +176,7 @@ void conjugateResidualSolver(C *instance, void (C::*A)(std::vector<V> &Ax, std::
     (instance->*A)(Ap, p);
 
     while (k-- > 0 && r > tolerance) {
+        LOG(VERBOSE) << "Solving k=" << k << std::endl;
 
         // r_k^T Ar_k
         auto dot_r_Ar_k = dot_r_Ar;
