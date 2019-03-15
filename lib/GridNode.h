@@ -11,13 +11,13 @@ class GridNode : public Node {
 
 public:
 
-    GridNode(glm::vec3 const &position, glm::uvec3 const &location) : Node(position), location(location) {}
+    GridNode(glm::dvec3 const &position, glm::uvec3 const &location) : Node(position), location(location) {}
 
 protected:
 
-    float density0;
+    double density0;
     glm::uvec3 location;
-    glm::vec3 force;
+    glm::dvec3 force;
 
 };
 

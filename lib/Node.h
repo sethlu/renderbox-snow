@@ -14,11 +14,18 @@ class Node {
 
 public:
 
-    Node(glm::vec3 const &position) : position(position) {}
+    Node(glm::dvec3 const &position) : position(position) {}
 
-    glm::vec3 position;
+    glm::dvec3 position;
 
-    glm::vec3 const &velocity(unsigned int n) const {
+    glm::dvec3 const &velocity(unsigned int n) const {
+        if ((n & 0x1) == 0) {
+            return velocity0;
+        }
+        return velocity1;
+    }
+
+    glm::dvec3 &velocity(unsigned int n) {
         if ((n & 0x1) == 0) {
             return velocity0;
         }
@@ -27,19 +34,12 @@ public:
 
 protected:
 
-    float mass;
-    glm::vec3 velocity0 = glm::vec3();
-    glm::vec3 velocity1 = glm::vec3();
-
-    glm::vec3 &velocity(unsigned int n) {
-        if ((n & 0x1) == 0) {
-            return velocity0;
-        }
-        return velocity1;
-    }
+    double mass;
+    glm::dvec3 velocity0 = glm::dvec3();
+    glm::dvec3 velocity1 = glm::dvec3();
 
     // Used for updates
-    glm::vec3 velocity_star;
+    glm::dvec3 velocity_star;
 
 };
 

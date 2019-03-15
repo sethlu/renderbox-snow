@@ -11,18 +11,18 @@ class ParticleNode : public Node {
 
 public:
 
-    ParticleNode(glm::vec3 const &position, float mass) : Node(position) {
+    ParticleNode(glm::dvec3 const &position, double mass) : Node(position) {
         this->mass = mass;
     }
 
 protected:
 
-    float volume0;
-    glm::mat3 deformElastic = glm::mat3(1);
-    glm::mat3 deformPlastic = glm::mat3(1);
+    double volume0;
+    glm::dmat3 deformElastic = glm::dmat3(1);
+    glm::dmat3 deformPlastic = glm::dmat3(1);
 
     // Used for updates
-    float tempWeight;
+    double tempWeight;
 
 };
 
