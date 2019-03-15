@@ -159,9 +159,6 @@ void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V> const 
 template<typename C, typename V>
 void conjugateResidualSolver(C *instance, void (C::*A)(std::vector<V> &Ax, std::vector<V> const &x), std::vector<V> &x,
                              std::vector<V> const &b, int k, double tolerance) {
-
-    std::cout << "solving" << std::endl;
-
     std::vector<V> Ax(b.size());
 
     // Ax_0
