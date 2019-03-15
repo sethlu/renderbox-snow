@@ -3,20 +3,20 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <Dense>
 
-#include "logging.h"
+#include "conjugate_residual_solver.h"
 
 
-typedef Eigen::Matrix<float, 3, 3> eigen_matrix3;
-typedef Eigen::Matrix<float, 3, 1> eigen_vector3;
+typedef Eigen::Matrix<double, 3, 3> eigen_matrix3;
+typedef Eigen::Matrix<double, 3, 1> eigen_vector3;
 
 
-SnowSolver::SnowSolver(float h, glm::uvec3 const &size) : h(h), invh(1 / h), size(size) {
+SnowSolver::SnowSolver(double h, glm::uvec3 const &size) : h(h), invh(1 / h), size(size) {
     LOG(INFO) << "size=" << size << std::endl;
 
     for (auto x = 0; x < size.x; x++) {
         for (auto y = 0; y < size.y; y++) {
             for (auto z = 0; z < size.z; z++) {
-                gridNodes.emplace_back(glm::vec3(x, y, z) * h, glm::uvec3(x, y, z));
+                gridNodes.emplace_back(glm::dvec3(x, y, z) * h, glm::uvec3(x, y, z));
             }
         }
     }
@@ -24,7 +24,7 @@ SnowSolver::SnowSolver(float h, glm::uvec3 const &size) : h(h), invh(1 / h), siz
     LOG(INFO) << "#gridNodes=" << gridNodes.size() << std::endl;
 }
 
-void svd(glm::mat3 const &m, glm::mat3 &u, glm::vec3 &e, glm::mat3 &v) {
+void svd(glm::dmat3 const &m, glm::dmat3 &u, glm::dvec3 &e, glm::dmat3 &v) {
     Eigen::Map<eigen_matrix3 const> mmap(glm::value_ptr(m));
     Eigen::Map<eigen_matrix3> umap(glm::value_ptr(u));
     Eigen::Map<eigen_vector3> emap(glm::value_ptr(e));
@@ -37,15 +37,24 @@ void svd(glm::mat3 const &m, glm::mat3 &u, glm::vec3 &e, glm::mat3 &v) {
     vmap = svd.matrixV();
 }
 
-glm::mat3 polarRot(glm::mat3 const &m) {
-    glm::mat3 u;
-    glm::vec3 e;
-    glm::mat3 v;
+glm::dmat3 polarRot(glm::dmat3 const &m) {
+    glm::dmat3 u;
+    glm::dvec3 e;
+    glm::dmat3 v;
     svd(m, u, e, v);
-    return u * v;
+    return u * glm::transpose(v);
 }
 
-void SnowSolver::update(float delta_t, unsigned int n) {
+void polarDecompose(glm::dmat3 const &m, glm::dmat3 &r, glm::dmat3 &s) {
+    glm::dmat3 u;
+    glm::dvec3 e;
+    glm::dmat3 v;
+    svd(m, u, e, v);
+    r = u * glm::transpose(v);
+    s = v * glm::dmat3(e.x, 0, 0, 0, e.y, 0, 0, 0, e.z) * glm::transpose(v);
+}
+
+void SnowSolver::update(double delta_t, unsigned int n) {
     LOG(VERBOSE) << "delta_t=" << delta_t << " n=" << n << std::endl;
 
     // 1. Rasterize particle data to the grid //////////////////////////////////////////////////////////////////////////
@@ -57,11 +66,13 @@ void SnowSolver::update(float delta_t, unsigned int n) {
         gridNode.velocity(n) = {};
     }
 
+    double totalGridNodeMass = 0;
     for (auto &particleNode : particleNodes) {
 
         // Nearby weighted grid nodes
-        auto gmin = glm::uvec3((particleNode.position / h) - glm::vec3(1));
-        auto gmax = glm::uvec3((particleNode.position / h) + glm::vec3(2));
+
+        auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+        auto gmax = glm::ivec3((particleNode.position / h) + glm::dvec3(2));
         for (auto gx = gmin.x; gx <= gmax.x; gx++) {
             for (auto gy = gmin.y; gy <= gmax.y; gy++) {
                 for (auto gz = gmin.z; gz <= gmax.z; gz++) {
@@ -73,14 +84,16 @@ void SnowSolver::update(float delta_t, unsigned int n) {
                     gridNode.mass += particleWeightedMass;
                     gridNode.velocity(n) += particleNode.velocity(n) * particleWeightedMass;
 
+                    totalGridNodeMass += particleWeightedMass;
                 }
             }
         }
 
     }
+    LOG(VERBOSE) << "sum(gridNode.mass)=" << totalGridNodeMass << std::endl;
 
     for (auto &gridNode : gridNodes) {
-        if (gridNode.mass > 0) {
+        if (glm::length(gridNode.velocity(n)) > 0 && gridNode.mass > 0) {
             gridNode.velocity(n) /= gridNode.mass;
         } else {
             gridNode.velocity(n) = {};
@@ -89,20 +102,25 @@ void SnowSolver::update(float delta_t, unsigned int n) {
 
     // 2. Compute particle volumes and densities ///////////////////////////////////////////////////////////////////////
 
-    LOG(VERBOSE) << "Step 2" << std::endl;
-
     if (n == 0) {
+
+        LOG(VERBOSE) << "Step 2" << std::endl;
+
+        double totalDensity = 0;
 
         for (auto &gridNode : gridNodes) {
             gridNode.density0 = gridNode.mass / (h * h * h);
+            totalDensity += gridNode.density0;
         }
+        LOG(VERBOSE) << "avg(gridNode.density0)=" << totalDensity / gridNodes.size() << std::endl;
 
+        totalDensity = 0;
         for (auto &particleNode : particleNodes) {
-            auto particleNodeDensity0 = 0.f;
+            double particleNodeDensity0 = 0;
 
             // Nearby weighted grid nodes
-            auto gmin = glm::uvec3((particleNode.position / h) - glm::vec3(1));
-            auto gmax = glm::uvec3((particleNode.position / h) + glm::vec3(2));
+            auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+            auto gmax = glm::ivec3((particleNode.position / h) + glm::dvec3(2));
             for (auto gx = gmin.x; gx <= gmax.x; gx++) {
                 for (auto gy = gmin.y; gy <= gmax.y; gy++) {
                     for (auto gz = gmin.z; gz <= gmax.z; gz++) {
@@ -115,7 +133,9 @@ void SnowSolver::update(float delta_t, unsigned int n) {
             }
 
             particleNode.volume0 = particleNode.mass / particleNodeDensity0;
+            totalDensity += particleNodeDensity0;
         }
+        LOG(VERBOSE) << "avg(particleNodeDensity0)=" << totalDensity / particleNodes.size() << std::endl;
 
     }
 
@@ -128,7 +148,7 @@ void SnowSolver::update(float delta_t, unsigned int n) {
     // 3
 
     for (auto &gridNode : gridNodes) {
-        gridNode.force = glm::vec3(0, 0, -9.8 * gridNode.mass);
+        gridNode.force = glm::dvec3(0, 0, -9.8 * gridNode.mass);
     }
 
     for (auto const &particleNode : particleNodes) {
@@ -143,11 +163,11 @@ void SnowSolver::update(float delta_t, unsigned int n) {
         auto unweightedForce = -particleNode.volume0 *
                                (2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
                                 glm::transpose(particleNode.deformElastic) +
-                                lambda * (je - 1) * je * glm::mat3(1));
+                                glm::dmat3(lambda * (je - 1) * je));
 
         // Nearby weighted grid nodes
-        auto gmin = glm::uvec3((particleNode.position / h) - glm::vec3(1));
-        auto gmax = glm::uvec3((particleNode.position / h) + glm::vec3(2));
+        auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+        auto gmax = glm::ivec3((particleNode.position / h) + glm::dvec3(2));
         for (auto gx = gmin.x; gx <= gmax.x; gx++) {
             for (auto gy = gmin.y; gy <= gmax.y; gy++) {
                 for (auto gz = gmin.z; gz <= gmax.z; gz++) {
@@ -167,7 +187,7 @@ void SnowSolver::update(float delta_t, unsigned int n) {
         // 4
 
         gridNode.velocity_star = gridNode.velocity(n);
-        if (gridNode.mass > 0) {
+        if (glm::length(gridNode.force) > 0 && gridNode.mass > 0) {
             gridNode.velocity_star += delta_t * gridNode.force / gridNode.mass;
         }
 
@@ -179,10 +199,20 @@ void SnowSolver::update(float delta_t, unsigned int n) {
 
     // 6. Solve the linear system //////////////////////////////////////////////////////////////////////////////////////
 
-    for (auto &gridNode : gridNodes) {
+    std::vector<glm::dvec3> velocity_star(gridNodes.size());
+    std::vector<glm::dvec3> velocity_next(gridNodes.size());
 
-        gridNode.velocity(n + 1) = gridNode.velocity_star;
+    for (size_t i = 0, s = gridNodes.size(); i < s; i++) {
+        velocity_star[i] = gridNodes[i].velocity_star;
+        velocity_next[i] = gridNodes[i].velocity_star;
+    }
 
+    // TODO: Enable semi-implicit solver
+//    conjugateResidualSolver(this, &SnowSolver::implicitVelocityIntegrationMatrix,
+//            velocity_next, velocity_star, 500, 1e-10);
+
+    for (size_t i = 0, s = gridNodes.size(); i < s; i++) {
+        gridNodes[i].velocity(n + 1) = velocity_next[i];
     }
 
     // 7. Update deformation gradient //////////////////////////////////////////////////////////////////////////////////
@@ -196,42 +226,44 @@ void SnowSolver::update(float delta_t, unsigned int n) {
 
         // 7
 
-        glm::mat3 deform = particleNode.deformElastic * particleNode.deformPlastic;
+        glm::dmat3 deform = particleNode.deformElastic * particleNode.deformPlastic;
 
-        glm::vec3 nabla_v = glm::vec3();
+        glm::dmat3 nabla_v{};
 
         // Nearby weighted grid nodes
-        auto gmin = glm::uvec3((particleNode.position / h) - glm::vec3(1));
-        auto gmax = glm::uvec3((particleNode.position / h) + glm::vec3(2));
+        auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+        auto gmax = glm::ivec3((particleNode.position / h) + glm::dvec3(2));
         for (auto gx = gmin.x; gx <= gmax.x; gx++) {
             for (auto gy = gmin.y; gy <= gmax.y; gy++) {
                 for (auto gz = gmin.z; gz <= gmax.z; gz++) {
                     if (!isValidGridNode(gx, gy, gz)) continue;
                     auto &gridNode = this->gridNode(gx, gy, gz);
 
-                    nabla_v += gridNode.velocity(n + 1) * nabla_weight(gridNode, particleNode);
+                    // Using the velocity at time n + 1 doesn't make sense to me
+                    nabla_v += glm::outerProduct(gridNode.velocity(n + 1), nabla_weight(gridNode, particleNode));
 
                 }
             }
         }
 
-        glm::mat3 multiplier = glm::mat3(1) + delta_t * glm::mat3(nabla_v.x, 0, 0, 0, nabla_v.y, 0, 0, 0, nabla_v.z);
+        glm::dmat3 multiplier = glm::dmat3(1) + delta_t * nabla_v;
 
-        glm::mat3 deform_prime = multiplier * deform;
-        glm::mat3 deformElastic_prime = multiplier * particleNode.deformElastic;
+        glm::dmat3 deform_prime = multiplier * deform;
+        glm::dmat3 deformElastic_prime = multiplier * particleNode.deformElastic;
 
-        glm::mat3 u;
-        glm::vec3 e;
-        glm::mat3 v;
+        glm::dmat3 u;
+        glm::dvec3 e;
+        glm::dmat3 v;
         svd(deformElastic_prime, u, e, v);
         e = glm::clamp(e, 1 - criticalCompression, 1 + criticalStretch);
 
-        particleNode.deformElastic = u * glm::mat3(e.x, 0, 0, 0, e.y, 0, 0, 0, e.z) * v;
-        particleNode.deformPlastic = glm::inverse(particleNode.deformElastic) * deform_prime;
+        particleNode.deformElastic = u * glm::dmat3(e.x, 0, 0, 0, e.y, 0, 0, 0, e.z) * glm::transpose(v);
+        particleNode.deformPlastic =
+                v * glm::dmat3(1 / e.x, 0, 0, 0, 1 / e.y, 0, 0, 0, 1 / e.z) * glm::transpose(u) * deform_prime;
 
         // 8
 
-        auto v_pic = glm::vec3();
+        auto v_pic = glm::dvec3();
         auto v_flip = particleNode.velocity(n);
 
         // Nearby weighted grid nodes
@@ -273,10 +305,10 @@ void SnowSolver::update(float delta_t, unsigned int n) {
 void SnowSolver::handleNodeCollisionVelocityUpdate(Node &node) {
 
     // Hard-coded floor collision & it's not moving anywhere
-    if (node.position.z <= 1) {
-        auto v_co = glm::vec3(0); // Velocity of collider object
-        auto n = glm::vec3(0, 0, 1); // Normal
-        auto mu = 1.f; // Coefficient of friction
+    if (node.position.z <= 0.1) {
+        auto v_co = glm::dvec3(0); // Velocity of collider object
+        auto n = glm::dvec3(0, 0, 1); // Normal
+        auto mu = 1.0; // Coefficient of friction
 
         // Relative velocity to collider object
         auto v_rel = node.velocity_star - v_co;
@@ -292,13 +324,176 @@ void SnowSolver::handleNodeCollisionVelocityUpdate(Node &node) {
 
         // Sticking impulse
         if (glm::length(v_t) <= -mu * v_n) {
-            v_rel = glm::vec3(0);
+            v_rel = glm::dvec3(0);
         } else {
             v_rel = v_t + mu * v_n * glm::normalize(v_t);
         };
 
         node.velocity_star = v_rel + v_co;
 
+    }
+
+}
+
+double ddot(glm::dmat3 a, glm::dmat3 b) {
+    return a[0][0] * b[0][0] + a[0][1] * b[0][1] + a[0][2] * b[0][2] +
+           a[1][0] * b[1][0] + a[1][1] * b[1][1] + a[1][2] * b[1][2] +
+           a[2][0] * b[2][0] + a[2][1] * b[2][1] + a[2][2] * b[2][2];
+}
+
+void
+SnowSolver::implicitVelocityIntegrationMatrix(std::vector<glm::dvec3> &Av_next, std::vector<glm::dvec3> const &v_next) {
+    LOG_ASSERT(Av_next.size() == v_next.size() && v_next.size() == gridNodes.size());
+
+    // FIXME: Hardcoded here for now
+    double delta_t = 5e-3;
+    double beta = 1;
+
+    size_t size = Av_next.size();
+
+    // x^n+1
+
+    std::vector<glm::dvec3> x_next(size);
+
+    for (size_t i = 0; i < size; i++) {
+        x_next[i] = gridNodes[i].position + delta_t * v_next[i];
+    }
+
+    // del_f
+
+    std::vector<glm::dvec3> del_f(size);
+
+    size_t numParticleNodes = particleNodes.size();
+    for (size_t i = 0; i < numParticleNodes; i++) {
+        auto const &particleNode = particleNodes[i];
+
+        auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+        auto gmax = glm::ivec3((particleNode.position / h) + glm::dvec3(2));
+
+        // del_deformElastic
+
+        glm::dmat3 del_deformElastic{};
+
+        for (auto gx = gmin.x; gx <= gmax.x; gx++) {
+            for (auto gy = gmin.y; gy <= gmax.y; gy++) {
+                for (auto gz = gmin.z; gz <= gmax.z; gz++) {
+                    if (!isValidGridNode(gx, gy, gz)) continue;
+                    auto &gridNode = this->gridNode(gx, gy, gz);
+
+                    del_deformElastic += glm::outerProduct(v_next[getGridNodeIndex(gx, gy, gz)],
+                                                           nabla_weight(gridNode, particleNode));
+
+                }
+            }
+        }
+
+        del_deformElastic = delta_t * del_deformElastic * particleNode.deformElastic;
+
+        // del_polarRotDeformElastic
+
+        glm::dmat3 r, s;
+        polarDecompose(particleNode.deformElastic, r, s);
+
+        auto rtdf_dftr = (glm::transpose(r) * del_deformElastic - glm::transpose(del_deformElastic) * r);
+        auto del_r =
+                glm::inverse(glm::dmat3(s[0][0] + s[1][1], s[1][2],
+                                        -s[0][2], s[2][1], s[0][0] + s[2][2], s[1][0],
+                                        -s[0][2], s[0][1], s[1][1] + s[2][2])) *
+                glm::dvec3(rtdf_dftr[0][1], rtdf_dftr[0][2], rtdf_dftr[1][2]);
+        auto del_polarRotDeformElastic =
+                glm::dmat3(0, -del_r.x, -del_r.y,
+                           del_r.x, 0, -del_r.z,
+                           del_r.y, del_r.z, 0);
+
+        // jp, je, mu, lambda
+
+        auto jp = glm::determinant(particleNode.deformPlastic);
+        auto je = glm::determinant(particleNode.deformElastic);
+
+        auto e = exp(hardeningCoefficient * (1 - jp));
+        auto mu = mu0 * e;
+        auto lambda = lambda0 * e;
+
+        auto cofactor_deformElastic = je * glm::transpose(glm::inverse(particleNode.deformElastic));
+
+        // del_je
+
+        // Take Frobenius inner product
+        auto del_je = ddot(cofactor_deformElastic, del_deformElastic);
+
+        // del_cofactor_deformElastic
+
+        auto &cde = cofactor_deformElastic;
+
+        auto del_cofactor_deformElastic = glm::dmat3(
+                ddot(glm::dmat3(0, 0, 0,
+                                0, cde[2][2], -cde[2][1],
+                                0, -cde[1][2], cde[1][1]),
+                     del_deformElastic),
+                ddot(glm::dmat3(0, 0, 0,
+                                -cde[2][2], 0, cde[2][0],
+                                cde[1][2], 0, -cde[1][0]),
+                     del_deformElastic),
+                ddot(glm::dmat3(0, 0, 0,
+                                cde[2][1], -cde[2][0], 0,
+                                -cde[1][1], cde[1][0], 0),
+                     del_deformElastic),
+
+                ddot(glm::dmat3(0, -cde[2][2], cde[2][1],
+                                0, 0, 0,
+                                0, cde[0][2], -cde[0][1]),
+                     del_deformElastic),
+                ddot(glm::dmat3(cde[2][2], 0, -cde[2][0],
+                                0, 0, 0,
+                                -cde[0][2], 0, cde[0][0]),
+                     del_deformElastic),
+                ddot(glm::dmat3(-cde[2][1], cde[2][0], 0,
+                                0, 0, 0,
+                                cde[0][1], -cde[0][0], 0),
+                     del_deformElastic),
+
+                ddot(glm::dmat3(0, cde[1][2], -cde[1][1],
+                                0, -cde[0][2], cde[0][1],
+                                0, 0, 0),
+                     del_deformElastic),
+                ddot(glm::dmat3(-cde[1][2], 0, cde[1][0],
+                                cde[0][2], 0, -cde[0][0],
+                                0, 0, 0),
+                     del_deformElastic),
+                ddot(glm::dmat3(cde[1][1], -cde[1][0], 0,
+                                -cde[0][1], cde[0][0], 0,
+                                0, 0, 0),
+                     del_deformElastic));
+
+        // Accumulate to del_f
+
+        auto unweightedDelForce =
+                -particleNode.volume0 * (2 * mu * (del_deformElastic - del_polarRotDeformElastic) +
+                                         lambda * (cofactor_deformElastic * del_je +
+                                                   (je - 1) * del_cofactor_deformElastic)) *
+                glm::transpose(particleNode.deformElastic);
+
+        for (auto gx = gmin.x; gx <= gmax.x; gx++) {
+            for (auto gy = gmin.y; gy <= gmax.y; gy++) {
+                for (auto gz = gmin.z; gz <= gmax.z; gz++) {
+                    if (!isValidGridNode(gx, gy, gz)) continue;
+                    auto &gridNode = this->gridNode(gx, gy, gz);
+
+                    del_f[getGridNodeIndex(gx, gy, gz)] += unweightedDelForce * nabla_weight(gridNode, particleNode);
+
+                }
+            }
+        }
+
+    }
+
+    // Av_next
+
+    for (size_t i = 0; i < size; i++) {
+        Av_next[i] = v_next[i];
+        if (gridNodes[i].mass > 0) {
+            Av_next[i] -= beta * delta_t * del_f[i] / gridNodes[i].mass;
+        }
     }
 
 }
