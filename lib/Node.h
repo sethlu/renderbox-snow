@@ -2,8 +2,7 @@
 #define SNOW_NODE_H
 
 
-#include "Vector.h"
-#include "Matrix.h"
+#include <glm/glm.hpp>
 
 #include "logging.h"
 
