@@ -31,14 +31,14 @@ public:
         return velocity1;
     }
 
+    // Used for updates
+    glm::dvec3 velocity_star;
+
 protected:
 
     double mass;
     glm::dvec3 velocity0 = glm::dvec3();
     glm::dvec3 velocity1 = glm::dvec3();
-
-    // Used for updates
-    glm::dvec3 velocity_star;
 
 };
 

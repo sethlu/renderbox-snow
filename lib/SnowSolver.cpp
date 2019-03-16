@@ -10,18 +10,8 @@ typedef Eigen::Matrix<double, 3, 3> eigen_matrix3;
 typedef Eigen::Matrix<double, 3, 1> eigen_vector3;
 
 
-SnowSolver::SnowSolver(double h, glm::uvec3 const &size) : h(h), invh(1 / h), size(size) {
-    LOG(INFO) << "size=" << size << std::endl;
-
-    for (auto x = 0; x < size.x; x++) {
-        for (auto y = 0; y < size.y; y++) {
-            for (auto z = 0; z < size.z; z++) {
-                gridNodes.emplace_back(glm::dvec3(x, y, z) * h, glm::uvec3(x, y, z));
-            }
-        }
-    }
-
-    LOG(INFO) << "#gridNodes=" << gridNodes.size() << std::endl;
+SnowSolver::SnowSolver(double h, glm::uvec3 const &size) : h(h), size(size) {
+    simulationParametersDidUpdate();
 }
 
 void svd(glm::dmat3 const &m, glm::dmat3 &u, glm::dvec3 &e, glm::dmat3 &v) {
@@ -54,8 +44,8 @@ void polarDecompose(glm::dmat3 const &m, glm::dmat3 &r, glm::dmat3 &s) {
     s = v * glm::dmat3(e.x, 0, 0, 0, e.y, 0, 0, 0, e.z) * glm::transpose(v);
 }
 
-void SnowSolver::update(double delta_t, unsigned int n) {
-    LOG(VERBOSE) << "delta_t=" << delta_t << " n=" << n << std::endl;
+void SnowSolver::update() {
+    LOG(INFO) << "delta_t=" << delta_t << " tick=" << tick << std::endl;
 
     // 1. Rasterize particle data to the grid //////////////////////////////////////////////////////////////////////////
 
@@ -63,7 +53,7 @@ void SnowSolver::update(double delta_t, unsigned int n) {
 
     for (auto &gridNode : gridNodes) {
         gridNode.mass = 0;
-        gridNode.velocity(n) = {};
+        gridNode.velocity(tick) = {};
     }
 
     double totalGridNodeMass = 0;
@@ -82,7 +72,7 @@ void SnowSolver::update(double delta_t, unsigned int n) {
                     auto particleWeightedMass = particleNode.mass * weight(gridNode, particleNode);
 
                     gridNode.mass += particleWeightedMass;
-                    gridNode.velocity(n) += particleNode.velocity(n) * particleWeightedMass;
+                    gridNode.velocity(tick) += particleNode.velocity(tick) * particleWeightedMass;
 
                     totalGridNodeMass += particleWeightedMass;
                 }
@@ -93,16 +83,16 @@ void SnowSolver::update(double delta_t, unsigned int n) {
     LOG(VERBOSE) << "sum(gridNode.mass)=" << totalGridNodeMass << std::endl;
 
     for (auto &gridNode : gridNodes) {
-        if (glm::length(gridNode.velocity(n)) > 0 && gridNode.mass > 0) {
-            gridNode.velocity(n) /= gridNode.mass;
+        if (glm::length(gridNode.velocity(tick)) > 0 && gridNode.mass > 0) {
+            gridNode.velocity(tick) /= gridNode.mass;
         } else {
-            gridNode.velocity(n) = {};
+            gridNode.velocity(tick) = {};
         }
     }
 
     // 2. Compute particle volumes and densities ///////////////////////////////////////////////////////////////////////
 
-    if (n == 0) {
+    if (tick == 0) {
 
         LOG(VERBOSE) << "Step 2" << std::endl;
 
@@ -186,33 +176,43 @@ void SnowSolver::update(double delta_t, unsigned int n) {
 
         // 4
 
-        gridNode.velocity_star = gridNode.velocity(n);
+        gridNode.velocity_star = gridNode.velocity(tick);
         if (glm::length(gridNode.force) > 0 && gridNode.mass > 0) {
             gridNode.velocity_star += delta_t * gridNode.force / gridNode.mass;
         }
 
         // 5
 
-        handleNodeCollisionVelocityUpdate(gridNode);
+        if (handleNodeCollisionVelocityUpdate)
+            handleNodeCollisionVelocityUpdate(gridNode);
 
     }
 
     // 6. Solve the linear system //////////////////////////////////////////////////////////////////////////////////////
 
-    std::vector<glm::dvec3> velocity_star(gridNodes.size());
-    std::vector<glm::dvec3> velocity_next(gridNodes.size());
+    if (beta > 0) {
 
-    for (size_t i = 0, s = gridNodes.size(); i < s; i++) {
-        velocity_star[i] = gridNodes[i].velocity_star;
-        velocity_next[i] = gridNodes[i].velocity_star;
-    }
+        std::vector<glm::dvec3> velocity_star(gridNodes.size());
+        std::vector<glm::dvec3> velocity_next(gridNodes.size());
 
-    // TODO: Enable semi-implicit solver
-//    conjugateResidualSolver(this, &SnowSolver::implicitVelocityIntegrationMatrix,
-//            velocity_next, velocity_star, 500, 1e-10);
+        for (size_t i = 0, s = gridNodes.size(); i < s; i++) {
+            velocity_star[i] = gridNodes[i].velocity_star;
+            velocity_next[i] = gridNodes[i].velocity_star;
+        }
 
-    for (size_t i = 0, s = gridNodes.size(); i < s; i++) {
-        gridNodes[i].velocity(n + 1) = velocity_next[i];
+        conjugateResidualSolver(this, &SnowSolver::implicitVelocityIntegrationMatrix,
+                                velocity_next, velocity_star, 500, 1e-10);
+
+        for (size_t i = 0, s = gridNodes.size(); i < s; i++) {
+            gridNodes[i].velocity(tick + 1) = velocity_next[i];
+        }
+
+    } else {
+
+        for (auto &gridNode : gridNodes) {
+            gridNode.velocity(tick + 1) = gridNode.velocity_star;
+        }
+
     }
 
     // 7. Update deformation gradient //////////////////////////////////////////////////////////////////////////////////
@@ -240,7 +240,7 @@ void SnowSolver::update(double delta_t, unsigned int n) {
                     auto &gridNode = this->gridNode(gx, gy, gz);
 
                     // Using the velocity at time n + 1 doesn't make sense to me
-                    nabla_v += glm::outerProduct(gridNode.velocity(n + 1), nabla_weight(gridNode, particleNode));
+                    nabla_v += glm::outerProduct(gridNode.velocity(tick + 1), nabla_weight(gridNode, particleNode));
 
                 }
             }
@@ -264,7 +264,7 @@ void SnowSolver::update(double delta_t, unsigned int n) {
         // 8
 
         auto v_pic = glm::dvec3();
-        auto v_flip = particleNode.velocity(n);
+        auto v_flip = particleNode.velocity(tick);
 
         // Nearby weighted grid nodes
         for (auto gx = gmin.x; gx <= gmax.x; gx++) {
@@ -274,8 +274,8 @@ void SnowSolver::update(double delta_t, unsigned int n) {
                     auto &gridNode = this->gridNode(gx, gy, gz);
 
                     auto w = weight(gridNode, particleNode);
-                    auto gv = gridNode.velocity(n);
-                    auto gv1 = gridNode.velocity(n + 1);
+                    auto gv = gridNode.velocity(tick);
+                    auto gv1 = gridNode.velocity(tick + 1);
 
                     v_pic += gv1 * w;
                     v_flip += (gv1 - gv) * w;
@@ -288,50 +288,18 @@ void SnowSolver::update(double delta_t, unsigned int n) {
 
         // 9
 
-        handleNodeCollisionVelocityUpdate(particleNode);
-        particleNode.velocity(n + 1) = particleNode.velocity_star;
+        if (handleNodeCollisionVelocityUpdate)
+            handleNodeCollisionVelocityUpdate(particleNode);
+
+        particleNode.velocity(tick + 1) = particleNode.velocity_star;
 
         // 10
 
-        particleNode.position += delta_t * particleNode.velocity(n + 1);
+        particleNode.position += delta_t * particleNode.velocity(tick + 1);
 
     }
 
-}
-
-/**
- * Updates node.velocity_star
- */
-void SnowSolver::handleNodeCollisionVelocityUpdate(Node &node) {
-
-    // Hard-coded floor collision & it's not moving anywhere
-    if (node.position.z <= 0.1) {
-        auto v_co = glm::dvec3(0); // Velocity of collider object
-        auto n = glm::dvec3(0, 0, 1); // Normal
-        auto mu = 1.0; // Coefficient of friction
-
-        // Relative velocity to collider object
-        auto v_rel = node.velocity_star - v_co;
-
-        auto v_n = glm::dot(v_rel, n);
-        if (v_n >= 0) {
-            // No collision
-            return;
-        }
-
-        // Tangential velocity
-        auto v_t = v_rel - n * v_n;
-
-        // Sticking impulse
-        if (glm::length(v_t) <= -mu * v_n) {
-            v_rel = glm::dvec3(0);
-        } else {
-            v_rel = v_t + mu * v_n * glm::normalize(v_t);
-        };
-
-        node.velocity_star = v_rel + v_co;
-
-    }
+    tick++;
 
 }
 
@@ -344,10 +312,6 @@ double ddot(glm::dmat3 a, glm::dmat3 b) {
 void
 SnowSolver::implicitVelocityIntegrationMatrix(std::vector<glm::dvec3> &Av_next, std::vector<glm::dvec3> const &v_next) {
     LOG_ASSERT(Av_next.size() == v_next.size() && v_next.size() == gridNodes.size());
-
-    // FIXME: Hardcoded here for now
-    double delta_t = 5e-3;
-    double beta = 1;
 
     size_t size = Av_next.size();
 

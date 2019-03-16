@@ -15,7 +15,13 @@ public:
 
     std::vector<ParticleNode> particleNodes;
 
-    void update(double delta_t, unsigned int n);
+    void update();
+
+    void (*handleNodeCollisionVelocityUpdate)(Node &node);
+
+    unsigned int getTick() {
+        return tick;
+    }
 
     unsigned int getGridNodeIndex(unsigned int x, unsigned int y, unsigned int z) {
         return (x * size.y + y) * size.z + z;
@@ -61,6 +67,8 @@ public:
 
 private:
 
+    // Simulation parameters
+
     // Reference
     double youngsModulus0 = 1.4e5;
     double criticalCompression = 2.5e-2;
@@ -86,17 +94,42 @@ private:
 //    double hardeningCoefficient = 10;
 
     double poissonsRatio = 0.2;
-    double lambda0 = youngsModulus0 * poissonsRatio / ((1 + poissonsRatio) * (1 - 2 * poissonsRatio));
-    double mu0 = youngsModulus0 / (2 * (1 + poissonsRatio));
-
-    double h;
-    double invh;
-    glm::uvec3 size;
-    std::vector<GridNode> gridNodes;
-
     double alpha = 0.95; // PIC/FLIP
 
-    void handleNodeCollisionVelocityUpdate(Node &node);
+    double h;
+    glm::uvec3 size;
+
+    unsigned int tick = 0;
+    double delta_t = 5e-3;
+
+    double beta = 0; // {explicit = 0, semi-implicit = 1} integration
+
+    // Dependent values on simulation parameters
+
+    double lambda0;
+    double mu0;
+    double invh;
+    std::vector<GridNode> gridNodes;
+
+    // Helper methods
+
+    void simulationParametersDidUpdate() {
+        lambda0 = youngsModulus0 * poissonsRatio / ((1 + poissonsRatio) * (1 - 2 * poissonsRatio));
+        mu0 = youngsModulus0 / (2 * (1 + poissonsRatio));
+        invh = 1 / h;
+
+        gridNodes.clear();
+        for (auto x = 0; x < size.x; x++) {
+            for (auto y = 0; y < size.y; y++) {
+                for (auto z = 0; z < size.z; z++) {
+                    gridNodes.emplace_back(glm::dvec3(x, y, z) * h, glm::uvec3(x, y, z));
+                }
+            }
+        }
+
+        LOG(INFO) << "size=" << size << std::endl;
+        LOG(INFO) << "#gridNodes=" << gridNodes.size() << std::endl;
+    }
 
     void implicitVelocityIntegrationMatrix(std::vector<glm::dvec3> &Ax, std::vector<glm::dvec3> const &x);
 
