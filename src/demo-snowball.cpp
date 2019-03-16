@@ -1,3 +1,5 @@
+#ifdef USE_RENDERBOX
+
 #include <memory>
 
 #define RENDERBOX_USE_OPENGL
@@ -61,7 +63,7 @@ static void windowSizeCallback(GLFWwindow *window, int width, int height) {
                            (float) renderTarget->getWindowWidth() / (float) renderTarget->getWindowHeight());
 }
 
-void launchDemoSnowball() {
+void launchDemoSnowball(int argc, char const **argv) {
 
     renderer.reset(new renderbox::OpenGLRenderer());
     renderTarget.reset(new renderbox::GLFWOpenGLRenderTarget());
@@ -199,3 +201,5 @@ void launchDemoSnowball() {
     glfwTerminate();
 
 }
+
+#endif //USE_RENDERBOX

@@ -1,0 +1,6 @@
+[submodule "vendor/renderbox"]
+	path = vendor/renderbox
+	url = git@github.com:sethlu/renderbox.git
+[submodule "vendor/eigen"]
+	path = vendor/eigen
+	url = git@github.com:eigenteam/eigen-git-mirror.git
