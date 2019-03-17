@@ -9,8 +9,8 @@
 
 #include "../lib/SnowSolver.h"
 #include "utils/renderer.h"
-#include "scenes/scene0.h"
-#include "snow/sphere.h"
+#include "scenes/scene1.h"
+#include "snow/slab.h"
 
 
 static unsigned ticksPerFrame = 1;
@@ -24,7 +24,7 @@ static void demoRenderLoopUpdate(unsigned int frame) {
 
 }
 
-void launchDemoSnowball(int argc, char const **argv) {
+void launchDemoSlabOverWedge(int argc, char const **argv) {
 
     // Simulation
 
@@ -35,7 +35,7 @@ void launchDemoSnowball(int argc, char const **argv) {
 
     solver.reset(new SnowSolver(gridSize, simulationSize * (1 / gridSize)));
 
-    genSnowSphere(glm::dvec3(0.5, 0.5, 0.5), 0.03, density, particleSize);
+    genSnowSlab(glm::dvec3(0.25, 0.45, 0.7), glm::dvec3(0.75, 0.55, 0.85), density, particleSize);
 
     solver->handleNodeCollisionVelocityUpdate = handleNodeCollisionVelocityUpdate;
 

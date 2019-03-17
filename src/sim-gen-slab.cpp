@@ -3,10 +3,10 @@
 
 #include "../lib/SnowSolver.h"
 #include "utils/common.h"
-#include "snow/sphere.h"
+#include "snow/slab.h"
 
 
-void launchSimGenSnowball(int argc, char const **argv) {
+void launchSimGenSlab(int argc, char const **argv) {
 
     // Simulation consts
 
@@ -22,7 +22,7 @@ void launchSimGenSnowball(int argc, char const **argv) {
 
     // Particles
 
-    genSnowSphere(glm::dvec3(0.5, 0.5, 0.5), 0.03, density, particleSize);
+    genSnowSlab(glm::dvec3(0.25, 0.45, 0.7), glm::dvec3(0.75, 0.55, 0.85), density, particleSize);
 
     std::cout << "#particles=" << solver->particleNodes.size() << std::endl;
 

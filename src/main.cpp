@@ -3,20 +3,38 @@
 
 void launchDemoSnowball(int argc, char const **argv);
 
+void launchDemoSlabOverWedge(int argc, char const **argv);
+
 void launchSimGenSnowball(int argc, char const **argv);
+
+void launchSimGenSlab(int argc, char const **argv);
 
 void launchSimScene0(int argc, char const **argv);
 
 void launchVizScene0(int argc, char const **argv);
 
+void launchSimScene1(int argc, char const **argv);
+
+void launchVizScene1(int argc, char const **argv);
+
 int main(int argc, char const **argv) {
 
     std::unordered_map<std::string, void (*)(int argc, char const **argv)> routines;
-    routines.insert(std::make_pair("sim-scene0", launchSimScene0));
+
     routines.insert(std::make_pair("sim-gen-snowball", launchSimGenSnowball));
+    routines.insert(std::make_pair("sim-gen-slab", launchSimGenSlab));
+
+    routines.insert(std::make_pair("sim-scene0", launchSimScene0));
+    routines.insert(std::make_pair("sim-scene1", launchSimScene1));
+
 #if USE_RENDERBOX
+
     routines.insert(std::make_pair("demo-snowball", launchDemoSnowball));
+    routines.insert(std::make_pair("demo-slab-over-wedge", launchDemoSlabOverWedge));
+
     routines.insert(std::make_pair("viz-scene0", launchVizScene0));
+    routines.insert(std::make_pair("viz-scene1", launchVizScene1));
+
 #endif //USE_RENDERBOX
 
     if (argc < 2) {
