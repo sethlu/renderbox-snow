@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <sstream>
+#include <unistd.h>
 
 #define RENDERBOX_USE_OPENGL
 #define RENDERBOX_USE_GLFW
@@ -100,7 +101,16 @@ void launchVizScene0(int argc, char const **argv) {
     }
 
     auto frame = startFrame;
+    auto timeLast = std::chrono::system_clock::now();
     while (!glfwWindowShouldClose(window)) {
+
+        // Manually cap frame rate
+        auto timeNow = std::chrono::system_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::nanoseconds>(timeNow - timeLast);
+        if (ms.count() < 16666666.67) {
+            continue;
+        }
+        timeLast = timeNow;
 
         renderer->render(scene.get(), camera.get(), renderTarget.get());
 
