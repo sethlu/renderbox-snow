@@ -511,7 +511,7 @@ void SnowSolver::saveState(std::string const &filename) {
     for (auto const &particleNode : particleNodes) {
         particleState.position = particleNode.position;
         particleState.velocity = particleNode.velocity(tick);
-        particleState.mass = particleState.mass;
+        particleState.mass = particleNode.mass;
         particleState.volume0 = particleNode.volume0;
         particleState.deformElastic = particleNode.deformElastic;
         particleState.deformPlastic = particleNode.deformPlastic;
