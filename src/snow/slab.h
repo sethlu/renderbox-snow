@@ -7,9 +7,9 @@
 static void genSnowSlab(glm::dvec3 corner1, glm::dvec3 corner2, double density, double particleSize) {
     auto simulationSize = solver->h * glm::dvec3(solver->size);
 
-    double volume = abs(corner2.x - corner1.x) *
-                    abs(corner2.y - corner1.y) *
-                    abs(corner2.z - corner1.z);
+    double volume = std::abs(corner2.x - corner1.x) *
+                    std::abs(corner2.y - corner1.y) *
+                    std::abs(corner2.z - corner1.z);
     auto totalNumParticles = static_cast<unsigned int>(volume / pow(particleSize, 3));
     unsigned int numParticles = 0;
 

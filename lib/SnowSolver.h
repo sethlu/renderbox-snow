@@ -73,7 +73,7 @@ public:
     }
 
     static double n(double x) {
-        auto absx = fabs(x);
+        auto absx = std::abs(x);
         if (absx < 1) {
             auto x2 = x * x;
             auto absx3 = x2 * absx;
@@ -87,7 +87,7 @@ public:
     }
 
     static double del_n(double x) {
-        auto absx = fabs(x);
+        auto absx = std::abs(x);
         if (absx < 1) {
             auto x2 = x * x;
             return (3.0 / 2 * x2 - 2 * absx) * (x < 0 ? -1 : 1);
