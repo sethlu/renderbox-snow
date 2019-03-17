@@ -2,11 +2,8 @@
 #include <sstream>
 
 #include "../lib/SnowSolver.h"
+#include "utils/common.h"
 
-
-inline double randNumber(double lo, double hi) {
-    return lo + rand() / (RAND_MAX / (hi - lo));
-}
 
 void launchSimInitSnowball(int argc, char const **argv) {
 
@@ -19,8 +16,8 @@ void launchSimInitSnowball(int argc, char const **argv) {
 
     // Init simulation
 
-    SnowSolver solver(gridSize, simulationSize * (1 / gridSize));
-    solver.delta_t = 1e-5;
+    solver.reset(new SnowSolver(gridSize, simulationSize * (1 / gridSize)));
+    solver->delta_t = 1e-5;
 
     // Particles
 
@@ -39,7 +36,7 @@ void launchSimInitSnowball(int argc, char const **argv) {
 
             if (glm::length(position - glm::dvec3(0.5, 0.5, 0.5)) <= radius) {
 
-                solver.particleNodes.emplace_back(position, mass);
+                solver->particleNodes.emplace_back(position, mass);
 
                 numParticles++;
             }
@@ -50,7 +47,7 @@ void launchSimInitSnowball(int argc, char const **argv) {
 
     std::ostringstream filename;
     filename << "frame-0.snowstate";
-    solver.saveState(filename.str());
+    solver->saveState(filename.str());
 
     std::cout << "Frame 0 written to: " << filename.str() << std::endl;
 
