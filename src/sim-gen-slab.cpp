@@ -10,7 +10,7 @@ void launchSimGenSlab(int argc, char const **argv) {
 
     // Simulation consts
 
-    double density = 400; // kg/m3
+    double density = 60; // kg/m3
     double particleSize = .0072;
     double gridSize = particleSize * 2;
     auto simulationSize = glm::dvec3(1);
