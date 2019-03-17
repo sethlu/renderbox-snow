@@ -1,7 +1,9 @@
 #include <memory>
 #include <sstream>
+#include <chrono>
 
 #include "../lib/SnowSolver.h"
+
 
 static void handleNodeCollisionVelocityUpdate(Node &node) {
 
