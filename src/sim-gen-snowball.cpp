@@ -18,7 +18,11 @@ void launchSimGenSnowball(int argc, char const **argv) {
     // Init simulation
 
     solver.reset(new SnowSolver(gridSize, simulationSize * (1 / gridSize)));
-    solver->delta_t = 1e-5;
+    solver->delta_t = 5e-4;
+
+    if (argc > 2) {
+        solver->beta = atof(argv[2]);
+    }
 
     // Particles
 
