@@ -6,6 +6,8 @@ void launchInfo(int argc, char const **argv);
 
 void launchDemoSnowball(int argc, char const **argv);
 
+void launchDemoDiffSnowball(int argc, char const **argv);
+
 void launchDemoSlabOverWedge(int argc, char const **argv);
 
 void launchSimGenSnowball(int argc, char const **argv);
@@ -37,6 +39,7 @@ int main(int argc, char const **argv) {
 #if USE_RENDERBOX
 
     routines.insert(std::make_pair("demo-snowball", launchDemoSnowball));
+    routines.insert(std::make_pair("demo-diff-snowball", launchDemoDiffSnowball));
     routines.insert(std::make_pair("demo-slab-over-wedge", launchDemoSlabOverWedge));
 
     routines.insert(std::make_pair("viz-scene0", launchVizScene0));

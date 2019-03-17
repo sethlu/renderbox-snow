@@ -28,6 +28,7 @@ static void genSnowSlab(glm::dvec3 corner1, glm::dvec3 corner2, double density, 
             position.z <= corner2.z) {
 
             solver->particleNodes.emplace_back(position, mass);
+            if (ghostSolver) ghostSolver->particleNodes.emplace_back(position, mass);
 
             numParticles++;
         }

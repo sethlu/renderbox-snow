@@ -19,7 +19,9 @@ static void genSnowSphere(glm::dvec3 position, double radius, double density, do
         auto mass = density * pow(particleSize, 3);
 
         if (glm::length(guess - position) <= radius) {
+
             solver->particleNodes.emplace_back(guess, mass);
+            if (ghostSolver) ghostSolver->particleNodes.emplace_back(guess, mass);
 
             numParticles++;
         }
