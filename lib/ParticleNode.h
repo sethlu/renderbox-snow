@@ -24,6 +24,10 @@ protected:
     // Used for updates
     double tempWeight;
 
+    // Memoized weights for each update
+    double weight[64];
+    glm::dvec3 nabla_weight[64];
+
 };
 
 
