@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-DIRECTORY=scene0-snowball-d60-semi-implicit-5e-4
+TIME_STEP=5e-3
+DIRECTORY=scene0-snowball-d60-explicit-$TIME_STEP
 FRAMES=120
 
 rm -rf $DIRECTORY
 mkdir $DIRECTORY
 cd $DIRECTORY
 
-../snow sim-gen-snowball 1
+../snow sim-gen-snowball $TIME_STEP
 ../snow sim-scene0 0 $FRAMES
