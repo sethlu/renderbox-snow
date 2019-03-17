@@ -32,6 +32,8 @@ static std::shared_ptr<renderbox::Material> snowParticleMaterial;
 
 static GLFWwindow *window;
 
+static int keyMods = 0;
+
 static double cameraDistance = 2;
 static double cameraAngle[] = {0.0, 90.0};
 
@@ -39,6 +41,30 @@ static double cameraAngle[] = {0.0, 90.0};
 static void windowSizeCallback(GLFWwindow *window, int width, int height) {
     camera->setPerspective(glm::radians(45.0f),
                            (float) renderTarget->getWindowWidth() / (float) renderTarget->getWindowHeight());
+}
+
+static void keyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods) {
+    keyMods = mods;
+}
+
+static void scrollCallback(GLFWwindow *window, double deltaX, double deltaY) {
+    auto cameraDirection = camera->getRay(renderbox::vec2()).getDirection();
+    auto forward = glm::normalize(glm::dvec3(cameraDirection.x, cameraDirection.y, 0));
+    auto right = glm::normalize(glm::dvec3(cameraDirection.y, -cameraDirection.x, 0));
+    if (keyMods & GLFW_MOD_ALT) {
+        cameraAngle[1] += -deltaY;
+        return;
+    }
+    cameraRig->translate((forward * deltaY - right * deltaX) * cameraDistance * 0.01);
+}
+
+static void zoomCallback(GLFWwindow *window, double magnification) {
+    cameraDistance /= (1 + magnification);
+    camera->setTranslation(glm::vec3(0, 0, cameraDistance));
+}
+
+static void rotateCallback(GLFWwindow *window, double rotation) {
+    cameraAngle[0] += -rotation;
 }
 
 static void updateVizParticlePositions() {
@@ -53,7 +79,7 @@ static void updateVizParticlePositions() {
 static void initRenderer() {
 
     auto simulationSize = solver->h * glm::dvec3(solver->size);
-    double particleSize = 0.01;
+    double particleSize = 0.0072;
 
     // Renderer
 
@@ -65,25 +91,30 @@ static void initRenderer() {
     // Callbacks
 
     glfwSetWindowSizeCallback(window, windowSizeCallback);
+    glfwSetKeyCallback(window, keyCallback);
+    glfwSetScrollCallback(window, scrollCallback);
+    glfwSetZoomCallback(window, zoomCallback);
+    glfwSetRotateCallback(window, rotateCallback);
 
     // Scene
 
     scene = std::make_shared<renderbox::Scene>();
 
     // Light
+
     auto light = std::make_shared<renderbox::PointLight>(glm::dvec3(100));
     light->setTranslation({simulationSize.x / 2, simulationSize.y / 2, 20});
     scene->addChild(light);
 
     // Camera
+
+    cameraRig = std::make_shared<renderbox::Object>();
+    cameraRig->setTranslation({simulationSize.x / 2, simulationSize.y / 2, 0.1});
+
     camera = std::make_shared<renderbox::PerspectiveCamera>(
             glm::radians(45.0), (double) renderTarget->getWindowWidth() / (double) renderTarget->getWindowHeight());
-    camera->setTranslation(glm::dvec3(0, 0, cameraDistance));
-    cameraRig = std::make_shared<renderbox::Object>();
     cameraRig->addChild(camera);
-    cameraRig->rotate({1, 0, 0}, glm::radians(cameraAngle[1]));
-    cameraRig->rotate({0, 0, 1}, glm::radians(cameraAngle[0]));
-    cameraRig->setTranslation({simulationSize.x / 2, simulationSize.y / 2, simulationSize.z / 2});
+    camera->setTranslation(glm::dvec3(0, 0, cameraDistance));
 
     // Colliders
 
@@ -122,6 +153,12 @@ static void startRenderLoop(void (*update)(unsigned int)) {
             continue;
         }
         timeLast = timeNow;
+
+        if (cameraAngle[1] < 10) cameraAngle[1] = 10;
+        else if (cameraAngle[1] > 85) cameraAngle[1] = 85;
+        cameraRig->clearRotation();
+        cameraRig->rotate({1, 0, 0}, glm::radians(cameraAngle[1]));
+        cameraRig->rotate({0, 0, 1}, glm::radians(cameraAngle[0]));
 
         renderer->render(scene.get(), camera.get(), renderTarget.get());
 
