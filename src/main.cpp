@@ -1,6 +1,9 @@
 #include <iostream>
 #include <unordered_map>
 
+
+void launchInfo(int argc, char const **argv);
+
 void launchDemoSnowball(int argc, char const **argv);
 
 void launchDemoSlabOverWedge(int argc, char const **argv);
@@ -20,6 +23,8 @@ void launchVizScene1(int argc, char const **argv);
 int main(int argc, char const **argv) {
 
     std::unordered_map<std::string, void (*)(int argc, char const **argv)> routines;
+
+    routines.insert(std::make_pair("info", launchInfo));
 
     routines.insert(std::make_pair("sim-gen-snowball", launchSimGenSnowball));
     routines.insert(std::make_pair("sim-gen-slab", launchSimGenSlab));

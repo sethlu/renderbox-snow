@@ -98,7 +98,7 @@ public:
         return 0;
     }
 
-    // Simulation parameters
+    // Physical parameters
     // NB: The parameters are not expected to change after simulation begins
 
     // Reference
@@ -125,6 +125,11 @@ public:
 //    double criticalStretch = 7.5e-3;
 //    double hardeningCoefficient = 10;
 
+    // Simulation parameters
+
+    double alpha = 0.95; // PIC/FLIP
+    double beta = 0; // {explicit = 0, semi-implicit = 1} integration
+
     // Grid
     double h;
     glm::uvec3 size;
@@ -132,9 +137,6 @@ public:
     // Time
     unsigned int tick = 0;
     double delta_t = 5e-3;
-
-    double alpha = 0.95; // PIC/FLIP
-    double beta = 0; // {explicit = 0, semi-implicit = 1} integration
 
     // Record keeping
 
