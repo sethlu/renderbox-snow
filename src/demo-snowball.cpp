@@ -136,7 +136,7 @@ void launchDemoSnowball(int argc, char const **argv) {
                     randNumber(0, simulationSize.x),
                     randNumber(0, simulationSize.y),
                     randNumber(0, simulationSize.z));
-            auto mass = density * powf(particleSize, 3);
+            auto mass = density * pow(particleSize, 3);
 
             if (glm::length(position - glm::dvec3(0.5, 0.5, 0.5)) <= radius) {
 

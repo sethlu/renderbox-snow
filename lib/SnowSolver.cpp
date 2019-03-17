@@ -2,6 +2,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Dense>
+#include <fstream>
 
 #include "conjugate_residual_solver.h"
 
@@ -11,7 +12,11 @@ typedef Eigen::Matrix<double, 3, 1> eigen_vector3;
 
 
 SnowSolver::SnowSolver(double h, glm::uvec3 const &size) : h(h), size(size) {
-    simulationParametersDidUpdate();
+
+}
+
+SnowSolver::SnowSolver(std::string const &filename) {
+    loadState(filename);
 }
 
 void svd(glm::dmat3 const &m, glm::dmat3 &u, glm::dvec3 &e, glm::dmat3 &v) {
@@ -46,6 +51,26 @@ void polarDecompose(glm::dmat3 const &m, glm::dmat3 &r, glm::dmat3 &s) {
 
 void SnowSolver::update() {
     LOG(INFO) << "delta_t=" << delta_t << " tick=" << tick << std::endl;
+
+    if (simulationParametersDidUpdate) {
+        simulationParametersDidUpdate = false;
+
+        lambda0 = youngsModulus0 * poissonsRatio / ((1 + poissonsRatio) * (1 - 2 * poissonsRatio));
+        mu0 = youngsModulus0 / (2 * (1 + poissonsRatio));
+        invh = 1 / h;
+
+        gridNodes.clear();
+        for (auto x = 0; x < size.x; x++) {
+            for (auto y = 0; y < size.y; y++) {
+                for (auto z = 0; z < size.z; z++) {
+                    gridNodes.emplace_back(glm::dvec3(x, y, z) * h, glm::uvec3(x, y, z));
+                }
+            }
+        }
+
+        LOG(INFO) << "size=" << size << std::endl;
+        LOG(INFO) << "#gridNodes=" << gridNodes.size() << std::endl;
+    }
 
     // 1. Rasterize particle data to the grid //////////////////////////////////////////////////////////////////////////
 
@@ -460,4 +485,76 @@ SnowSolver::implicitVelocityIntegrationMatrix(std::vector<glm::dvec3> &Av_next, 
         }
     }
 
+}
+
+void SnowSolver::saveState(std::string const &filename) {
+    std::ofstream file;
+    file.open(filename, std::ofstream::binary | std::ofstream::trunc);
+
+    SNOW_SOLVER_STATE_HEADER solverStateHeader{
+            youngsModulus0,
+            criticalCompression,
+            criticalStretch,
+            hardeningCoefficient,
+            h,
+            size,
+            tick,
+            delta_t,
+            alpha,
+            beta,
+            particleNodes.size()
+    };
+
+    file.write(reinterpret_cast<char *>(&solverStateHeader), sizeof(SNOW_SOLVER_STATE_HEADER));
+
+    SNOW_SOLVER_STATE_PARTICLE particleState{};
+    for (auto const &particleNode : particleNodes) {
+        particleState.position = particleNode.position;
+        particleState.velocity = particleNode.velocity(tick);
+        particleState.mass = particleState.mass;
+        particleState.volume0 = particleNode.volume0;
+        particleState.deformElastic = particleNode.deformElastic;
+        particleState.deformPlastic = particleNode.deformPlastic;
+
+        file.write(reinterpret_cast<char *>(&particleState), sizeof(SNOW_SOLVER_STATE_PARTICLE));
+    }
+
+    file.close();
+}
+
+void SnowSolver::loadState(std::string const &filename) {
+    std::ifstream file(filename, std::ifstream::binary);
+
+    ParticleNode emptyParticleNode{{},
+                                   {}};
+
+    SNOW_SOLVER_STATE_HEADER solverStateHeader{};
+    file.read(reinterpret_cast<char *>(&solverStateHeader), sizeof(SNOW_SOLVER_STATE_HEADER));
+    youngsModulus0 = solverStateHeader.youngsModulus0;
+    criticalCompression = solverStateHeader.criticalCompression;
+    criticalStretch = solverStateHeader.criticalStretch;
+    hardeningCoefficient = solverStateHeader.hardeningCoefficient;
+    h = solverStateHeader.h;
+    size = solverStateHeader.size;
+    tick = solverStateHeader.tick;
+    delta_t = solverStateHeader.delta_t;
+    alpha = solverStateHeader.alpha;
+    beta = solverStateHeader.beta;
+    particleNodes.resize(solverStateHeader.numParticles, emptyParticleNode);
+
+    SNOW_SOLVER_STATE_PARTICLE particleState{};
+    for (auto &particleNode : particleNodes) {
+        file.read(reinterpret_cast<char *>(&particleState), sizeof(SNOW_SOLVER_STATE_PARTICLE));
+
+        particleNode.position = particleState.position;
+        particleNode.velocity(tick) = particleState.velocity;
+        particleNode.mass = particleState.mass;
+        particleNode.volume0 = particleState.volume0;
+        particleNode.deformElastic = particleState.deformElastic;
+        particleNode.deformPlastic = particleState.deformPlastic;
+    }
+
+    file.close();
+
+    simulationParametersDidUpdate = true;
 }

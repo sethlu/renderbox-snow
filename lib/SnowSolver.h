@@ -11,16 +11,49 @@
 class SnowSolver {
 public:
 
+    struct SNOW_SOLVER_STATE_HEADER {
+        double youngsModulus0; // 8
+        double criticalCompression; // 8
+        double criticalStretch; // 8
+        double hardeningCoefficient; // 8
+        double h; // 8
+        glm::uvec3 size; // 12
+        unsigned int tick; // 4
+        double delta_t; // 8
+        double alpha; // 8
+        double beta; // 8
+        size_t numParticles; // 8
+    };
+
+    struct SNOW_SOLVER_STATE_PARTICLE {
+        glm::dvec3 position; // 24
+        glm::dvec3 velocity; // 24
+        double mass; // 8
+        double volume0; // 8
+        glm::dmat3 deformElastic; // 72
+        glm::dmat3 deformPlastic; // 72
+    };
+
     SnowSolver(double h, glm::uvec3 const &size);
+
+    explicit SnowSolver(std::string const &filename);
 
     std::vector<ParticleNode> particleNodes;
 
     void update();
 
+    void saveState(std::string const &filename);
+
+    void loadState(std::string const &filename);
+
     void (*handleNodeCollisionVelocityUpdate)(Node &node);
 
     unsigned int getTick() {
         return tick;
+    }
+
+    double getTime() {
+        return tick * delta_t;
     }
 
     unsigned int getGridNodeIndex(unsigned int x, unsigned int y, unsigned int z) {
@@ -65,9 +98,8 @@ public:
         return 0;
     }
 
-private:
-
     // Simulation parameters
+    // NB: The parameters are not expected to change after simulation begins
 
     // Reference
     double youngsModulus0 = 1.4e5;
@@ -93,16 +125,24 @@ private:
 //    double criticalStretch = 7.5e-3;
 //    double hardeningCoefficient = 10;
 
-    double poissonsRatio = 0.2;
-    double alpha = 0.95; // PIC/FLIP
-
+    // Grid
     double h;
     glm::uvec3 size;
 
+    // Time
     unsigned int tick = 0;
     double delta_t = 5e-3;
 
+    double alpha = 0.95; // PIC/FLIP
     double beta = 0; // {explicit = 0, semi-implicit = 1} integration
+
+    // Record keeping
+
+    bool simulationParametersDidUpdate = true;
+
+private:
+
+    double poissonsRatio = 0.2;
 
     // Dependent values on simulation parameters
 
@@ -112,24 +152,6 @@ private:
     std::vector<GridNode> gridNodes;
 
     // Helper methods
-
-    void simulationParametersDidUpdate() {
-        lambda0 = youngsModulus0 * poissonsRatio / ((1 + poissonsRatio) * (1 - 2 * poissonsRatio));
-        mu0 = youngsModulus0 / (2 * (1 + poissonsRatio));
-        invh = 1 / h;
-
-        gridNodes.clear();
-        for (auto x = 0; x < size.x; x++) {
-            for (auto y = 0; y < size.y; y++) {
-                for (auto z = 0; z < size.z; z++) {
-                    gridNodes.emplace_back(glm::dvec3(x, y, z) * h, glm::uvec3(x, y, z));
-                }
-            }
-        }
-
-        LOG(INFO) << "size=" << size << std::endl;
-        LOG(INFO) << "#gridNodes=" << gridNodes.size() << std::endl;
-    }
 
     void implicitVelocityIntegrationMatrix(std::vector<glm::dvec3> &Ax, std::vector<glm::dvec3> const &x);
 
