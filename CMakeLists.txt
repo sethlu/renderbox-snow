@@ -18,7 +18,7 @@ endif ()
 
 # Static library
 
-file(GLOB_RECURSE LIB_SOURCE_FILES lib/*.cpp)
+file(GLOB_RECURSE LIB_SOURCE_FILES lib/*.cpp vendor/renderbox/src/utils/logging.cpp)
 
 add_library(snowlib ${LIB_SOURCE_FILES})
 target_include_directories(snowlib

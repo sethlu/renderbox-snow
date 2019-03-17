@@ -3,6 +3,7 @@
 
 #include "../lib/SnowSolver.h"
 
+
 inline double randNumber(double lo, double hi) {
     return lo + rand() / (RAND_MAX / (hi - lo));
 }
