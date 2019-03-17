@@ -5,7 +5,7 @@
 #include "utils/common.h"
 
 
-void launchSimInitSnowball(int argc, char const **argv) {
+void launchSimGenSnowball(int argc, char const **argv) {
 
     // Simulation consts
 
