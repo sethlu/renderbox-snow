@@ -16,6 +16,8 @@ void launchSimScene0(int argc, char const **argv);
 
 void launchVizScene0(int argc, char const **argv);
 
+void launchVizDiffScene0(int argc, char const **argv);
+
 void launchSimScene1(int argc, char const **argv);
 
 void launchVizScene1(int argc, char const **argv);
@@ -38,6 +40,7 @@ int main(int argc, char const **argv) {
     routines.insert(std::make_pair("demo-slab-over-wedge", launchDemoSlabOverWedge));
 
     routines.insert(std::make_pair("viz-scene0", launchVizScene0));
+    routines.insert(std::make_pair("viz-diff-scene0", launchVizDiffScene0));
     routines.insert(std::make_pair("viz-scene1", launchVizScene1));
 
 #endif //USE_RENDERBOX

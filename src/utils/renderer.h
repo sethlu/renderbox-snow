@@ -26,9 +26,11 @@ static std::shared_ptr<renderbox::Object> colliders;
 static std::shared_ptr<renderbox::Material> colliderMaterial;
 
 static std::shared_ptr<renderbox::Object> particles;
+static std::shared_ptr<renderbox::Object> ghostParticles;
 
 static std::shared_ptr<renderbox::Geometry> snowParticleGeometry;
 static std::shared_ptr<renderbox::Material> snowParticleMaterial;
+static std::shared_ptr<renderbox::Material> ghostSnowParticleMaterial;
 
 static GLFWwindow *window;
 
@@ -72,6 +74,13 @@ static void updateVizParticlePositions() {
     auto numParticles = solver->particleNodes.size();
     for (auto i = 0; i < numParticles; i++) {
         particles->children[i]->setTranslation(solver->particleNodes[i].position);
+    }
+
+    if (ghostSolver) {
+        auto numGhostParticles = ghostSolver->particleNodes.size();
+        for (auto i = 0; i < numGhostParticles; i++) {
+            ghostParticles->children[i]->setTranslation(ghostSolver->particleNodes[i].position);
+        }
     }
 
 }
@@ -125,15 +134,31 @@ static void initRenderer() {
 
     // Particles
 
+    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(particleSize, particleSize, particleSize);
+    if (!ghostSolver) {
+        snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 1, 1));
+    } else {
+        snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 0, 0));
+        ghostSnowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(0, 1, 0));
+    }
+
     particles = std::make_shared<renderbox::Object>();
     scene->addChild(particles);
-
-    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(particleSize, particleSize, particleSize);
-    snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 1, 1));
 
     auto numParticles = solver->particleNodes.size();
     for (auto i = 0; i < numParticles; i++) {
         particles->addChild(std::make_shared<renderbox::Object>(snowParticleGeometry, snowParticleMaterial));
+    }
+
+    if (ghostSolver) {
+        ghostParticles = std::make_shared<renderbox::Object>();
+        scene->addChild(ghostParticles);
+
+        auto numGhostParticles = ghostSolver->particleNodes.size();
+        for (auto i = 0; i < numGhostParticles; i++) {
+            ghostParticles->addChild(
+                    std::make_shared<renderbox::Object>(snowParticleGeometry, ghostSnowParticleMaterial));
+        }
     }
 
     updateVizParticlePositions();
