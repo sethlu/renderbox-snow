@@ -8,4 +8,4 @@ mkdir $DIRECTORY
 cd $DIRECTORY
 
 ../snow sim-init-snowball
-../snow sim-scene0 frame-0.snowstate 0 $FRAMES
+../snow sim-scene0 0 $FRAMES

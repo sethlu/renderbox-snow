@@ -40,18 +40,20 @@ static void handleNodeCollisionVelocityUpdate(Node &node) {
 
 void launchSimScene0(int argc, char const **argv) {
 
-    if (argc < 5) {
-        std::cout << "Usage: ./snow sim-scene0 frame.snowstate frame end-frame" << std::endl;
-        exit(0);
+    if (argc < 4) {
+        std::cout << "Usage: ./snow sim-scene0 frame end-frame" << std::endl;
+        exit(1);
     }
 
     auto fps = 60;
-    int timedFrames = std::stoi(argv[3]);
-    int totalFrames = std::stoi(argv[4]);
+    int timedFrames = std::stoi(argv[2]);
+    int totalFrames = std::stoi(argv[3]);
 
     // Init simulation
 
-    SnowSolver solver{std::string(argv[2])};
+    std::ostringstream filename;
+    filename << "frame-" << timedFrames << ".snowstate";
+    SnowSolver solver{filename.str()};
 
     // Colliders
 
@@ -59,7 +61,7 @@ void launchSimScene0(int argc, char const **argv) {
 
     // Render loop
 
-    while (timedFrames < totalFrames) {
+    while (timedFrames + 1 < totalFrames) {
 
         std::cout << "tick=" << solver.getTick() << " time=" << solver.getTime() << std::endl;
 
