@@ -7,6 +7,8 @@ void launchSimInitSnowball(int argc, char const **argv);
 
 void launchSimScene0(int argc, char const **argv);
 
+void launchVizScene0(int argc, char const **argv);
+
 int main(int argc, char const **argv) {
 
     std::unordered_map<std::string, void (*)(int argc, char const **argv)> routines;
@@ -14,6 +16,7 @@ int main(int argc, char const **argv) {
     routines.insert(std::make_pair("sim-init-snowball", launchSimInitSnowball));
 #if USE_RENDERBOX
     routines.insert(std::make_pair("demo-snowball", launchDemoSnowball));
+    routines.insert(std::make_pair("viz-scene0", launchVizScene0));
 #endif //USE_RENDERBOX
 
     if (argc < 2) {
