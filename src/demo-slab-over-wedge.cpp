@@ -28,7 +28,7 @@ void launchDemoSlabOverWedge(int argc, char const **argv) {
 
     // Simulation
 
-    double density = 60; // kg/m3
+    double density = 400; // kg/m3
     double particleSize = .01;
     double gridSize = particleSize * 2;
     auto simulationSize = glm::dvec3(1);

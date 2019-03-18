@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 TIME_STEP=5e-3
-DIRECTORY=scene0-snowball-d60-explicit-$TIME_STEP
+DIRECTORY=scene0-snowball-d400-explicit-$TIME_STEP
 FRAMES=120
 
 rm -rf $DIRECTORY
