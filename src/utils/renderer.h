@@ -88,7 +88,6 @@ static void updateVizParticlePositions() {
 static void initRenderer() {
 
     auto simulationSize = solver->h * glm::dvec3(solver->size);
-    double particleSize = 0.0072;
 
     // Renderer
 
@@ -134,7 +133,7 @@ static void initRenderer() {
 
     // Particles
 
-    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(particleSize, particleSize, particleSize);
+    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(1, 1, 1);
     if (!ghostSolver) {
         snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 1, 1));
     } else {
@@ -148,6 +147,7 @@ static void initRenderer() {
     auto numParticles = solver->particleNodes.size();
     for (auto i = 0; i < numParticles; i++) {
         particles->addChild(std::make_shared<renderbox::Object>(snowParticleGeometry, snowParticleMaterial));
+        particles->children[i]->setScale(glm::vec3(solver->h / 2));
     }
 
     if (ghostSolver) {
@@ -158,6 +158,7 @@ static void initRenderer() {
         for (auto i = 0; i < numGhostParticles; i++) {
             ghostParticles->addChild(
                     std::make_shared<renderbox::Object>(snowParticleGeometry, ghostSnowParticleMaterial));
+            ghostParticles->children[i]->setScale(glm::vec3(ghostSolver->h / 2));
         }
     }
 
