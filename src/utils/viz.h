@@ -11,18 +11,22 @@
 static unsigned int startFrame;
 static unsigned int endFrame;
 
+static std::string dir;
+
 
 static void initViz(int argc, char const **argv) {
 
-    startFrame = static_cast<unsigned int>(atoi(argv[2]));
-    endFrame = static_cast<unsigned int>(atoi(argv[3]));
+    startFrame = static_cast<unsigned int>(atoi(argv[3]));
+    endFrame = static_cast<unsigned int>(atoi(argv[4]));
 
     // Simulation
+
+    dir = argv[2];
 
     std::ostringstream filename;
     filename << "frame-" << startFrame << ".snowstate";
 
-    solver.reset(new SnowSolver(filename.str()));
+    solver.reset(new SnowSolver(joinPath(dir, filename.str())));
 
     // Rendering
 
@@ -35,7 +39,7 @@ static void vizRenderLoopUpdate(unsigned int frame) {
     unsigned int wrappedFrame = startFrame + frame % (endFrame - startFrame);
     std::ostringstream filename;
     filename << "frame-" << wrappedFrame << ".snowstate";
-    solver->loadState(filename.str());
+    solver->loadState(joinPath(dir, filename.str()));
 
 }
 

@@ -5,8 +5,8 @@
 
 
 void launchVizScene0(int argc, char const **argv) {
-    if (argc < 4) {
-        std::cout << "Usage: ./snow sim-scene0 frame end-frame" << std::endl;
+    if (argc < 5) {
+        std::cout << "Usage: ./snow sim-scene0 dir frame end-frame" << std::endl;
         exit(1);
     }
 

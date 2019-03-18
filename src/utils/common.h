@@ -11,5 +11,9 @@ inline double randNumber(double lo, double hi) {
     return lo + rand() / (RAND_MAX / (hi - lo));
 }
 
+inline std::string joinPath(std::string a, std::string b) {
+    return a + "/" + b;
+}
+
 
 #endif //SNOW_COMMON_H

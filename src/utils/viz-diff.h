@@ -15,10 +15,6 @@ static std::string dirA;
 static std::string dirB;
 
 
-static std::string joinPath(std::string a, std::string b) {
-    return a + "/" + b;
-}
-
 static void initVizDiff(int argc, char const **argv) {
 
     startFrame = static_cast<unsigned int>(atoi(argv[4]));
