@@ -15,7 +15,7 @@ static std::string dirA;
 static std::string dirB;
 
 
-std::string joinPath(std::string a, std::string b) {
+static std::string joinPath(std::string a, std::string b) {
     return a + "/" + b;
 }
 
