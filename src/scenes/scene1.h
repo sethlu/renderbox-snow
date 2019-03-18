@@ -125,7 +125,7 @@ static void renderColliders() {
             colliderMaterial);
     wedge->rotate({0, 1, 0}, glm::radians(-45.f));
     wedge->setTranslation({0.5, 0.5, 0.5});
-    scene->addChild(wedge);
+    colliders->addChild(wedge);
 
 }
 
