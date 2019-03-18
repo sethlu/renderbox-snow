@@ -1,8 +1,9 @@
 #include "SnowSolver.h"
 
+#include <fstream>
+
 #include <glm/gtc/type_ptr.hpp>
 #include <Dense>
-#include <fstream>
 
 #include "conjugate_residual_solver.h"
 
@@ -88,11 +89,12 @@ void SnowSolver::update() {
     }
 
     double totalGridNodeMass = 0;
+
     for (auto p = 0; p < numParticleNodes; p++) {
         auto &particleNode = particleNodes[p];
+        auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
 
         // Nearby weighted grid nodes
-        auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
         for (unsigned int i = 0; i < 64; i++) {
             auto gx = gmin.x + i / 16;
             auto gy = gmin.y + (i / 4) % 4;
@@ -113,6 +115,7 @@ void SnowSolver::update() {
         }
 
     }
+
     LOG(VERBOSE) << "sum(gridNode.mass)=" << totalGridNodeMass << std::endl;
 
     for (auto i = 0; i < numGridNodes; i++) {
@@ -141,15 +144,17 @@ void SnowSolver::update() {
             totalDensity += gridNode.density0;
 
         }
+
         LOG(VERBOSE) << "avg(gridNode.density0)=" << totalDensity / gridNodes.size() << std::endl;
 
         totalDensity = 0;
+
         for (auto p = 0; p < numParticleNodes; p++) {
             auto &particleNode = particleNodes[p];
-            double particleNodeDensity0 = 0;
+            auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
 
             // Nearby weighted grid nodes
-            auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+            double particleNodeDensity0 = 0;
             for (unsigned int i = 0; i < 64; i++) {
                 auto gx = gmin.x + i / 16;
                 auto gy = gmin.y + (i / 4) % 4;
@@ -164,6 +169,7 @@ void SnowSolver::update() {
             particleNode.volume0 = particleNode.mass / particleNodeDensity0;
             totalDensity += particleNodeDensity0;
         }
+
         LOG(VERBOSE) << "avg(particleNodeDensity0)=" << totalDensity / particleNodes.size() << std::endl;
 
     }
@@ -185,6 +191,7 @@ void SnowSolver::update() {
 
     for (auto p = 0; p < numParticleNodes; p++) {
         auto const &particleNode = particleNodes[p];
+        auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
 
         auto jp = glm::determinant(particleNode.deformPlastic);
         auto je = glm::determinant(particleNode.deformElastic);
@@ -199,7 +206,6 @@ void SnowSolver::update() {
                                 glm::dmat3(lambda * (je - 1) * je));
 
         // Nearby weighted grid nodes
-        auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
         for (unsigned int i = 0; i < 64; i++) {
             auto gx = gmin.x + i / 16;
             auto gy = gmin.y + (i / 4) % 4;
@@ -275,7 +281,6 @@ void SnowSolver::update() {
 
     for (auto p = 0; p < numParticleNodes; p++) {
         auto &particleNode = particleNodes[p];
-
         auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
 
         // 7
@@ -379,7 +384,6 @@ SnowSolver::implicitVelocityIntegrationMatrix(std::vector<glm::dvec3> &Av_next, 
 
     for (auto p = 0; p < numParticleNodes; p++) {
         auto const &particleNode = particleNodes[p];
-
         auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
 
         // del_deformElastic
