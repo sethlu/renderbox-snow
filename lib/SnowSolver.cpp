@@ -50,27 +50,31 @@ void polarDecompose(glm::dmat3 const &m, glm::dmat3 &r, glm::dmat3 &s) {
     s = v * glm::dmat3(e.x, 0, 0, 0, e.y, 0, 0, 0, e.z) * glm::transpose(v);
 }
 
+void SnowSolver::propagateSimulationParametersUpdate() {
+    simulationParametersDidUpdate = false;
+
+    lambda0 = youngsModulus0 * poissonsRatio / ((1 + poissonsRatio) * (1 - 2 * poissonsRatio));
+    mu0 = youngsModulus0 / (2 * (1 + poissonsRatio));
+    invh = 1 / h;
+
+    gridNodes.clear();
+    for (auto x = 0; x < size.x; x++) {
+        for (auto y = 0; y < size.y; y++) {
+            for (auto z = 0; z < size.z; z++) {
+                gridNodes.emplace_back(glm::dvec3(x, y, z) * h, glm::uvec3(x, y, z));
+            }
+        }
+    }
+
+    LOG(INFO) << "size=" << size << std::endl;
+    LOG(INFO) << "#gridNodes=" << gridNodes.size() << std::endl;
+}
+
 void SnowSolver::update() {
     LOG(INFO) << "delta_t=" << delta_t << " tick=" << tick << std::endl;
 
     if (simulationParametersDidUpdate) {
-        simulationParametersDidUpdate = false;
-
-        lambda0 = youngsModulus0 * poissonsRatio / ((1 + poissonsRatio) * (1 - 2 * poissonsRatio));
-        mu0 = youngsModulus0 / (2 * (1 + poissonsRatio));
-        invh = 1 / h;
-
-        gridNodes.clear();
-        for (auto x = 0; x < size.x; x++) {
-            for (auto y = 0; y < size.y; y++) {
-                for (auto z = 0; z < size.z; z++) {
-                    gridNodes.emplace_back(glm::dvec3(x, y, z) * h, glm::uvec3(x, y, z));
-                }
-            }
-        }
-
-        LOG(INFO) << "size=" << size << std::endl;
-        LOG(INFO) << "#gridNodes=" << gridNodes.size() << std::endl;
+        propagateSimulationParametersUpdate();
     }
 
     auto numGridNodes = gridNodes.size();
@@ -201,9 +205,9 @@ void SnowSolver::update() {
         auto lambda = lambda0 * e;
 
         auto unweightedForce = -particleNode.volume0 *
-                               (2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
-                                glm::transpose(particleNode.deformElastic) +
-                                glm::dmat3(lambda * (je - 1) * je));
+                (2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
+                         glm::transpose(particleNode.deformElastic) +
+                 glm::dmat3(lambda * (je - 1) * je));
 
         // Nearby weighted grid nodes
         for (unsigned int i = 0; i < 64; i++) {

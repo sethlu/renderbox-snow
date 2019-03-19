@@ -40,6 +40,8 @@ public:
 
     std::vector<ParticleNode> particleNodes;
 
+    void propagateSimulationParametersUpdate();
+
     void update();
 
     void saveState(std::string const &filename);

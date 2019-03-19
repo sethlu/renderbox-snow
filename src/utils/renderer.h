@@ -37,8 +37,10 @@ static GLFWwindow *window;
 static int keyMods = 0;
 
 static double cameraDistance = 2;
-static double cameraAngle[] = {0.0, 90.0};
+static double cameraAngle[] = {0.0, 80.0};
 
+
+#ifndef VIZ_RENDER
 
 static void windowSizeCallback(GLFWwindow *window, int width, int height) {
     camera->setPerspective(glm::radians(45.0f),
@@ -69,6 +71,8 @@ static void rotateCallback(GLFWwindow *window, double rotation) {
     cameraAngle[0] += -rotation;
 }
 
+#endif //VIZ_RENDER
+
 static void updateVizParticlePositions() {
 
     auto numParticles = solver->particleNodes.size();
@@ -98,11 +102,13 @@ static void initRenderer() {
 
     // Callbacks
 
+#ifndef VIZ_RENDER
     glfwSetWindowSizeCallback(window, windowSizeCallback);
     glfwSetKeyCallback(window, keyCallback);
     glfwSetScrollCallback(window, scrollCallback);
     glfwSetZoomCallback(window, zoomCallback);
     glfwSetRotateCallback(window, rotateCallback);
+#endif //VIZ_RENDER
 
     // Scene
 
@@ -117,7 +123,13 @@ static void initRenderer() {
     // Camera
 
     cameraRig = std::make_shared<renderbox::Object>();
+
+#ifndef VIZ_RENDER
     cameraRig->setTranslation({simulationSize.x / 2, simulationSize.y / 2, 0.1});
+#else
+    cameraRig->setTranslation({simulationSize.x / 2, simulationSize.y / 2, simulationSize.z / 2});
+    cameraAngle[1] = 90;
+#endif //VIZ_RENDER
 
     camera = std::make_shared<renderbox::PerspectiveCamera>(
             glm::radians(45.0), (double) renderTarget->getWindowWidth() / (double) renderTarget->getWindowHeight());
@@ -133,7 +145,7 @@ static void initRenderer() {
 
     // Particles
 
-    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(1, 1, 1);
+    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(solver->h / 2, solver->h / 2, solver->h / 2);
     if (!ghostSolver) {
         snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 1, 1));
     } else {
@@ -147,7 +159,6 @@ static void initRenderer() {
     auto numParticles = solver->particleNodes.size();
     for (auto i = 0; i < numParticles; i++) {
         particles->addChild(std::make_shared<renderbox::Object>(snowParticleGeometry, snowParticleMaterial));
-        particles->children[i]->setScale(glm::vec3(solver->h / 2));
     }
 
     if (ghostSolver) {
@@ -158,7 +169,6 @@ static void initRenderer() {
         for (auto i = 0; i < numGhostParticles; i++) {
             ghostParticles->addChild(
                     std::make_shared<renderbox::Object>(snowParticleGeometry, ghostSnowParticleMaterial));
-            ghostParticles->children[i]->setScale(glm::vec3(ghostSolver->h / 2));
         }
     }
 
@@ -166,7 +176,7 @@ static void initRenderer() {
 
 }
 
-static void startRenderLoop(void (*update)(unsigned int)) {
+static void startRenderLoop(void (*update)(unsigned int), bool (*callback)(unsigned int) = nullptr) {
 
     unsigned int frame = 0;
     auto timeLast = std::chrono::system_clock::now();
@@ -181,7 +191,7 @@ static void startRenderLoop(void (*update)(unsigned int)) {
         timeLast = timeNow;
 
         if (cameraAngle[1] < 10) cameraAngle[1] = 10;
-        else if (cameraAngle[1] > 85) cameraAngle[1] = 85;
+        else if (cameraAngle[1] > 90) cameraAngle[1] = 90;
         cameraRig->clearRotation();
         cameraRig->rotate({1, 0, 0}, glm::radians(cameraAngle[1]));
         cameraRig->rotate({0, 0, 1}, glm::radians(cameraAngle[0]));
@@ -190,9 +200,11 @@ static void startRenderLoop(void (*update)(unsigned int)) {
 
         glfwSwapBuffers(window);
 
-        glfwPollEvents();
+        if (callback && !callback(frame)) break;
 
         // Update
+
+        glfwPollEvents();
 
         update(++frame);
 

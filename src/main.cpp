@@ -24,6 +24,8 @@ void launchSimScene1(int argc, char const **argv);
 
 void launchVizScene1(int argc, char const **argv);
 
+void launchRenderScene1(int argc, char const **argv);
+
 void launchVizDiffScene1(int argc, char const **argv);
 
 int main(int argc, char const **argv) {
@@ -47,6 +49,7 @@ int main(int argc, char const **argv) {
     routines.insert(std::make_pair("viz-scene0", launchVizScene0));
     routines.insert(std::make_pair("viz-diff-scene0", launchVizDiffScene0));
     routines.insert(std::make_pair("viz-scene1", launchVizScene1));
+    routines.insert(std::make_pair("render-scene1", launchRenderScene1));
     routines.insert(std::make_pair("viz-diff-scene1", launchVizDiffScene1));
 
 #endif //USE_RENDERBOX
