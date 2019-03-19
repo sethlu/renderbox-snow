@@ -4,7 +4,7 @@
 
 void launchSimScene1(int argc, char const **argv) {
     if (argc < 4) {
-        std::cout << "Usage: ./snow viz-scene1 start-frame end-frame" << std::endl;
+        std::cout << "Usage: ./snow sim-scene1 start-frame end-frame" << std::endl;
         exit(1);
     }
 
