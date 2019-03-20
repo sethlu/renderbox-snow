@@ -183,7 +183,7 @@ private:
         auto dny = del_n(invh * (particlePosition.y - gridPosition.y));
         auto dnz = del_n(invh * (particlePosition.z - gridPosition.z));
 
-        return {dnx * ny * nz, nx * dny * nz, nx * ny * dnz};
+        return invh * glm::dvec3(dnx * ny * nz, nx * dny * nz, nx * ny * dnz);
     }
 
     double weight(GridNode const &i, ParticleNode const &p) {
