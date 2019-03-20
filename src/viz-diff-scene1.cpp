@@ -6,7 +6,7 @@
 
 void launchVizDiffScene1(int argc, char const **argv) {
     if (argc < 6) {
-        std::cout << "Usage: ./snow viz-diff-1scene0 dir-a dir-b frame end-frame" << std::endl;
+        std::cout << "Usage: ./snow viz-diff-scene1 dir-a dir-b frame end-frame" << std::endl;
         exit(1);
     }
 
