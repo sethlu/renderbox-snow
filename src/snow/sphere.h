@@ -11,19 +11,20 @@ static void genSnowSphere(glm::dvec3 position, double radius, double density, do
     auto totalNumParticles = static_cast<unsigned int>(volume / pow(particleSize, 3));
     unsigned int numParticles = 0;
 
+    auto particleMass = density * pow(particleSize, 3);
+
     while (numParticles < totalNumParticles) {
         auto guess = glm::dvec3(
-                randNumber(0, simulationSize.x),
-                randNumber(0, simulationSize.y),
-                randNumber(0, simulationSize.z));
-        auto mass = density * pow(particleSize, 3);
+                randNumber(position.x - radius, position.x + radius),
+                randNumber(position.y - radius, position.y + radius),
+                randNumber(position.z - radius, position.z + radius));
 
         if (glm::length(guess - position) <= radius) {
 
-            solver->particleNodes.emplace_back(guess, mass);
-            if (ghostSolver) ghostSolver->particleNodes.emplace_back(guess, mass);
+            solver->particleNodes.emplace_back(guess, particleMass);
+            if (ghostSolver) ghostSolver->particleNodes.emplace_back(guess, particleMass);
 
             numParticles++;
         }
-    };
+    }
 }

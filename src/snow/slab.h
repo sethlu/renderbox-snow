@@ -13,25 +13,18 @@ static void genSnowSlab(glm::dvec3 corner1, glm::dvec3 corner2, double density, 
     auto totalNumParticles = static_cast<unsigned int>(volume / pow(particleSize, 3));
     unsigned int numParticles = 0;
 
+    auto particleMass = density * pow(particleSize, 3);
+
     while (numParticles < totalNumParticles) {
-        auto position = glm::dvec3(
-                randNumber(0, simulationSize.x),
-                randNumber(0, simulationSize.y),
-                randNumber(0, simulationSize.z));
-        auto mass = density * powf(particleSize, 3);
+        auto particlePosition = glm::dvec3(
+                randNumber(corner1.x, corner2.x),
+                randNumber(corner1.y, corner2.y),
+                randNumber(corner1.z, corner2.z));
 
-        if (position.x >= corner1.x &&
-            position.y >= corner1.y &&
-            position.z >= corner1.z &&
-            position.x <= corner2.x &&
-            position.y <= corner2.y &&
-            position.z <= corner2.z) {
+        solver->particleNodes.emplace_back(particlePosition, particleMass);
+        if (ghostSolver) ghostSolver->particleNodes.emplace_back(particlePosition, particleMass);
 
-            solver->particleNodes.emplace_back(position, mass);
-            if (ghostSolver) ghostSolver->particleNodes.emplace_back(position, mass);
-
-            numParticles++;
-        }
+        numParticles++;
     }
 
 }
