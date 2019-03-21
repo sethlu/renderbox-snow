@@ -415,15 +415,15 @@ SnowSolver::implicitVelocityIntegrationMatrix(std::vector<glm::dvec3> &Av_next, 
         polarDecompose(particleNode.deformElastic, r, s);
 
         auto rtdf_dftr = (glm::transpose(r) * del_deformElastic - glm::transpose(del_deformElastic) * r);
-        auto del_r =
-                glm::inverse(glm::dmat3(s[0][0] + s[1][1], s[1][2],
-                                        -s[0][2], s[2][1], s[0][0] + s[2][2], s[1][0],
-                                        -s[0][2], s[0][1], s[1][1] + s[2][2])) *
-                glm::dvec3(rtdf_dftr[0][1], rtdf_dftr[0][2], rtdf_dftr[1][2]);
+        auto rtdr = glm::inverse(glm::dmat3(s[0][0] + s[1][1], s[2][1], -s[2][0],
+                                            s[1][2], s[0][0] + s[2][2], s[0][1],
+                                            -s[2][0], s[1][0], s[2][2] + s[1][1])) *
+                    glm::dvec3(rtdf_dftr[1][0], rtdf_dftr[2][0], rtdf_dftr[2][1]);
+
         auto del_polarRotDeformElastic =
-                glm::dmat3(0, -del_r.x, -del_r.y,
-                           del_r.x, 0, -del_r.z,
-                           del_r.y, del_r.z, 0);
+                r * glm::dmat3(0, -rtdr.x, -rtdr.y,
+                               rtdr.x, 0, -rtdr.z,
+                               rtdr.y, rtdr.z, 0);
 
         // jp, je, mu, lambda
 
