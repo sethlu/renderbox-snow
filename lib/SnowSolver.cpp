@@ -113,7 +113,7 @@ void SnowSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.weight[i];
 
             gridNode.mass += particleWeightedMass;
-            gridNode.velocity(tick) += particleNode.velocity(tick) * particleWeightedMass;
+            gridNode.velocity(tick) += particleNode.velocity(tick) * particleWeightedMass; // Translational momentum
 
             totalGridNodeMass += particleWeightedMass;
         }
@@ -125,6 +125,7 @@ void SnowSolver::update() {
     for (auto i = 0; i < numGridNodes; i++) {
         auto &gridNode = gridNodes[i];
 
+        // Compute velocity
         if (glm::length(gridNode.velocity(tick)) > 0 && gridNode.mass > 0) {
             gridNode.velocity(tick) /= gridNode.mass;
         } else {
@@ -205,9 +206,9 @@ void SnowSolver::update() {
         auto lambda = lambda0 * e;
 
         auto unweightedForce = -particleNode.volume0 *
-                (2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
-                         glm::transpose(particleNode.deformElastic) +
-                 glm::dmat3(lambda * (je - 1) * je));
+                               (2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
+                                glm::transpose(particleNode.deformElastic) +
+                                glm::dmat3(lambda * (je - 1) * je));
 
         // Nearby weighted grid nodes
         for (unsigned int i = 0; i < 64; i++) {
