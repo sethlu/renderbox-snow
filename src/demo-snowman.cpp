@@ -28,24 +28,22 @@ void launchDemoSnowman(int argc, char const **argv) {
 
     // Simulation
 
-    double density = 800; // kg/m3
-    double particleSize = .01;
+    double density = 400; // kg/m3
+    double particleSize = .0072;
     double gridSize = particleSize * 2;
     auto simulationSize = glm::dvec3(1);
 
     solver.reset(new SnowSolver(gridSize, simulationSize * (1 / gridSize)));
+    solver->delta_t = 5e-4; // Smaller time step so simulation doesn't blow up
 
     auto r1 = 0.2 / 2;
     auto r2 = 0.125 / 2;
     auto r3 = 0.075 / 2;
-    auto overlap = 0.05;
+    auto overlap = 0.025;
 
     auto c1 = 0.1 + r1;
     auto c2 = c1 + r1 - overlap + r2;
     auto c3 = c2 + r2 - overlap + r3;
-
-    genSnowSlab(glm::dvec3(0.05, 0.05, 0.075), glm::dvec3(simulationSize.x - 0.05, simulationSize.y - 0.05, 0.125),
-                density, particleSize);
 
     genSnowSphere(glm::dvec3(0.5, 0.5, c1), r1, density, particleSize);
     genSnowSphere(glm::dvec3(0.5, 0.5, c2), r2, density, particleSize);

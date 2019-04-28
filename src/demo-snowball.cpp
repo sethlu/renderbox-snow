@@ -35,7 +35,7 @@ void launchDemoSnowball(int argc, char const **argv) {
 
     solver.reset(new SnowSolver(gridSize, simulationSize * (1 / gridSize)));
 
-    genSnowSphere(glm::dvec3(0.5, 0.5, 0.5), 0.03, density, particleSize);
+    genSnowSphere(glm::dvec3(0.5, 0.5, 0.5), 0.06, density, particleSize);
 
     solver->handleNodeCollisionVelocityUpdate = handleNodeCollisionVelocityUpdate;
 
