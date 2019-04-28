@@ -6,6 +6,10 @@
 
 #include "../../lib/SnowSolver.h"
 
+#ifdef VIZ_RENDER
+#define RENDERER_NO_LIMIT_FRAMERATE
+#endif
+
 #include "renderer.h"
 
 

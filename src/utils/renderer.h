@@ -178,10 +178,14 @@ static void initRenderer() {
 
 static void startRenderLoop(void (*update)(unsigned int), bool (*callback)(unsigned int) = nullptr) {
 
-    unsigned int frame = 0;
+#ifdef RENDERER_NO_LIMIT_FRAMERATE
     auto timeLast = std::chrono::system_clock::now();
+#endif
+
+    unsigned int frame = 0;
     while (!glfwWindowShouldClose(window)) {
 
+#ifdef RENDERER_NO_LIMIT_FRAMERATE
         // Manually cap frame rate
         auto timeNow = std::chrono::system_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::nanoseconds>(timeNow - timeLast);
@@ -189,6 +193,7 @@ static void startRenderLoop(void (*update)(unsigned int), bool (*callback)(unsig
             continue;
         }
         timeLast = timeNow;
+#endif //RENDERER_NO_LIMIT_FRAMERATE
 
         if (cameraAngle[1] < 10) cameraAngle[1] = 10;
         else if (cameraAngle[1] > 90) cameraAngle[1] = 90;
