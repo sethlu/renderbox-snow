@@ -11,7 +11,7 @@
 
 // Vector dot product
 template<typename V>
-V operator*(std::vector<V> const &a, std::vector<V> const &b) {
+inline V operator*(std::vector<V> const &a, std::vector<V> const &b) {
     LOG_ASSERT(a.size() == b.size());
 
     V result = {};
@@ -23,7 +23,7 @@ V operator*(std::vector<V> const &a, std::vector<V> const &b) {
 }
 
 // Vector of vec3 dot product
-double operator*(std::vector<glm::dvec3> const &a, std::vector<glm::dvec3> const &b) {
+inline double operator*(std::vector<glm::dvec3> const &a, std::vector<glm::dvec3> const &b) {
     LOG_ASSERT(a.size() == b.size());
 
     double result = {};
@@ -36,7 +36,7 @@ double operator*(std::vector<glm::dvec3> const &a, std::vector<glm::dvec3> const
 
 // Scalar multiply to vector
 template<typename V>
-std::vector<V> operator*(double a, std::vector<V> const &b) {
+inline std::vector<V> operator*(double a, std::vector<V> const &b) {
 
     std::vector<V> result(b.size());
     for (size_t i = 0, n = b.size(); i < n; i++) {
@@ -48,7 +48,7 @@ std::vector<V> operator*(double a, std::vector<V> const &b) {
 
 // Vector addition
 template<typename V>
-std::vector<V> operator+(std::vector<V> const &a, std::vector<V> const &b) {
+inline std::vector<V> operator+(std::vector<V> const &a, std::vector<V> const &b) {
     LOG_ASSERT(a.size() == b.size());
 
     std::vector<V> result(a.size());
@@ -61,7 +61,7 @@ std::vector<V> operator+(std::vector<V> const &a, std::vector<V> const &b) {
 
 // Vector subtraction
 template<typename V>
-std::vector<V> operator-(std::vector<V> const &a, std::vector<V> const &b) {
+inline std::vector<V> operator-(std::vector<V> const &a, std::vector<V> const &b) {
     LOG_ASSERT(a.size() == b.size());
 
     std::vector<V> result(a.size());
@@ -74,25 +74,25 @@ std::vector<V> operator-(std::vector<V> const &a, std::vector<V> const &b) {
 
 // Vector tolerance check
 template<typename V>
-bool operator>(std::vector<V> const &a, double tolerance) {
+inline bool operator>(std::vector<V> const &a, double tolerance) {
 
     V result = {};
     for (size_t i = 0, n = a.size(); i < n; i++) {
         result += a[i] * a[i];
     }
 
-    return result > tolerance * tolerance;
+    return result / a.size() > tolerance * tolerance;
 }
 
 // Vector of vec3 tolerance check
-bool operator>(std::vector<glm::dvec3> const &a, double tolerance) {
+inline bool operator>(std::vector<glm::dvec3> const &a, double tolerance) {
 
     double result = {};
     for (size_t i = 0, n = a.size(); i < n; i++) {
         result += glm::dot(a[i], a[i]);
     }
 
-    return result > tolerance * tolerance;
+    return result / a.size() > tolerance * tolerance;
 }
 
 /**
@@ -101,8 +101,11 @@ bool operator>(std::vector<glm::dvec3> const &a, double tolerance) {
  * The result will be written in x
  */
 template<typename V>
-void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V> const &x), std::vector<V> &x,
-                             std::vector<V> const &b, int k, double tolerance) {
+inline void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V> const &x),
+                                    std::vector<V> &x,
+                                    std::vector<V> const &b,
+                                    int k,
+                                    double tolerance) {
     std::vector<V> Ax(b.size());
 
     // Ax_0
@@ -159,8 +162,12 @@ void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V> const 
  * The result will be written in x
  */
 template<typename C, typename V>
-void conjugateResidualSolver(C *instance, void (C::*A)(std::vector<V> &Ax, std::vector<V> const &x), std::vector<V> &x,
-                             std::vector<V> const &b, int k, double tolerance) {
+inline void conjugateResidualSolver(C *instance,
+                                    void (C::*A)(std::vector<V> &Ax, std::vector<V> const &x),
+                                    std::vector<V> &x,
+                                    std::vector<V> const &b,
+                                    int k,
+                                    double tolerance) {
     std::vector<V> Ax(b.size());
 
     // Ax_0

@@ -1,10 +1,14 @@
 #ifndef SNOW_COMMON_H
 #define SNOW_COMMON_H
 
+#ifndef SOLVER
+#define SOLVER SnowSolver
+#define SOLVER_SNOW 1
+#endif //SOLVER
 
-static std::unique_ptr<SnowSolver> solver;
+static std::unique_ptr<SOLVER> solver;
 
-static std::unique_ptr<SnowSolver> ghostSolver; // Alternative solver for diffing purposes
+static std::unique_ptr<SOLVER> ghostSolver; // Alternative solver for diffing purposes
 
 
 inline double randNumber(double lo, double hi) {

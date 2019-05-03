@@ -6,9 +6,10 @@
 
 #include "ParticleNode.h"
 #include "GridNode.h"
+#include "Solver.h"
 
 
-class SnowSolver {
+class SnowSolver : public Solver {
 public:
 
     struct SNOW_SOLVER_STATE_HEADER {
@@ -190,18 +191,8 @@ private:
         return n(i.position, p.position);
     }
 
-    double weight(unsigned i, unsigned p) {
-        return n(i, p);
-    }
-
     glm::dvec3 nabla_weight(GridNode const &i, ParticleNode const &p) {
         return nabla_n(i.position, p.position);
-    }
-
-    glm::dvec3 nabla_weight(unsigned i, unsigned p) {
-        auto const &gpos = gridNodes[i].position;
-        auto const &ppos = particleNodes[p].position;
-        return nabla_n(gpos, ppos);
     }
 
 };

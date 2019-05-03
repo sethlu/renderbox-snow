@@ -35,6 +35,16 @@ static void handleNodeCollisionVelocityUpdate(Node &node) {
 }
 
 
+static bool isNodeColliding(Node &node) {
+
+    if (node.position.z <= 0.1) {
+        return true;
+    }
+
+    return false;
+}
+
+
 #ifdef USE_RENDERBOX
 
 

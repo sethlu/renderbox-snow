@@ -31,6 +31,8 @@ static std::shared_ptr<renderbox::Object> ghostParticles;
 static std::shared_ptr<renderbox::Geometry> snowParticleGeometry;
 static std::shared_ptr<renderbox::Material> snowParticleMaterial;
 static std::shared_ptr<renderbox::Material> ghostSnowParticleMaterial;
+static std::shared_ptr<renderbox::Material> lavaParticleLiquidMaterial;
+static std::shared_ptr<renderbox::Material> lavaParticlePhaseChangeMaterial;
 
 static GLFWwindow *window;
 
@@ -78,6 +80,16 @@ static void updateVizParticlePositions() {
     auto numParticles = solver->particleNodes.size();
     for (auto i = 0; i < numParticles; i++) {
         particles->children[i]->setTranslation(solver->particleNodes[i].position);
+
+#ifndef SOLVER_SNOW
+        if (solver->particleNodes[i].temperature > solver->particleNodes[i].fusionTemperature + FLT_EPSILON) {
+            particles->children[i]->setMaterial(lavaParticleLiquidMaterial);
+        } else if (solver->particleNodes[i].temperature < solver->particleNodes[i].fusionTemperature - FLT_EPSILON) {
+            particles->children[i]->setMaterial(snowParticleMaterial);
+        } else {
+            particles->children[i]->setMaterial(lavaParticlePhaseChangeMaterial);
+        }
+#endif //SOLVER_SNOW
     }
 
     if (ghostSolver) {
@@ -145,13 +157,15 @@ static void initRenderer() {
 
     // Particles
 
-    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(solver->h / 2, solver->h / 2, solver->h / 2);
+    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(0.005, 0.005, 0.005);
     if (!ghostSolver) {
         snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 1, 1));
     } else {
         snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 0, 0));
         ghostSnowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(0, 1, 0));
     }
+    lavaParticleLiquidMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(0, 0, 1));
+    lavaParticlePhaseChangeMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(0, 1, 0));
 
     particles = std::make_shared<renderbox::Object>();
     scene->addChild(particles);

@@ -438,6 +438,7 @@ SnowSolver::implicitVelocityIntegrationMatrix(std::vector<glm::dvec3> &Av_next, 
         auto cofactor_deformElastic = je * glm::transpose(glm::inverse(particleNode.deformElastic));
 
         // del_je
+        // FIXME: Better variable name?
 
         // Take Frobenius inner product
         auto del_je = ddot(cofactor_deformElastic, del_deformElastic);

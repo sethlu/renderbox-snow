@@ -12,6 +12,8 @@ void launchDemoSlabOverWedge(int argc, char const **argv);
 
 void launchDemoSnowman(int argc, char const **argv);
 
+void launchDemoButterball(int argc, char const **argv);
+
 void launchSimGenSnowball(int argc, char const **argv);
 
 void launchSimGenSlab(int argc, char const **argv);
@@ -51,6 +53,8 @@ int main(int argc, char const **argv) {
     routines.insert(std::make_pair("demo-diff-snowball", launchDemoDiffSnowball));
     routines.insert(std::make_pair("demo-slab-over-wedge", launchDemoSlabOverWedge));
     routines.insert(std::make_pair("demo-snowman", launchDemoSnowman));
+
+    routines.insert(std::make_pair("demo-butterball", launchDemoButterball));
 
     routines.insert(std::make_pair("viz-scene0", launchVizScene0));
     routines.insert(std::make_pair("viz-diff-scene0", launchVizDiffScene0));
