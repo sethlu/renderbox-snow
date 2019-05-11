@@ -12,28 +12,26 @@ enum LavaGridCellNodeType {
 };
 
 
-class LavaGridCellNode : Node {
-
-    friend class LavaSolver;
-
-public:
+struct LavaGridCellNode : public Node {
 
     LavaGridCellNode(glm::dvec3 const &position, glm::uvec3 const &location) : Node(position), location(location) {}
 
-protected:
-
     glm::uvec3 location;
-    glm::dvec3 force;
-    double j;
-    double je;
-    double jp;
-    double specificHeat; // [J/K/kg]
-    double temperature; // [K]
-    double inv_lambda; // lambda^(-1) rasterized on grid face
 
-    LavaGridCellNodeType type;
+    glm::dvec3 force{};
 
-    double temperature_next; // [K]
+    double j{};
+    double je{};
+    double jp{};
+
+    double specificHeat{}; // [J/K/kg]
+
+    double temperature{}; // [K]
+    double temperature_next{}; // [K]
+
+    double inv_lambda{}; // lambda^(-1) rasterized on grid face
+
+    LavaGridCellNodeType type = EMPTY;
 
 };
 

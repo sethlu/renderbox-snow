@@ -88,7 +88,7 @@ void SnowSolver::update() {
         auto &gridNode = gridNodes[i];
 
         gridNode.mass = 0;
-        gridNode.velocity(tick) = {};
+        gridNode.velocity = {};
 
     }
 
@@ -113,7 +113,7 @@ void SnowSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.weight[i];
 
             gridNode.mass += particleWeightedMass;
-            gridNode.velocity(tick) += particleNode.velocity(tick) * particleWeightedMass; // Translational momentum
+            gridNode.velocity += particleNode.velocity * particleWeightedMass; // Translational momentum
 
             totalGridNodeMass += particleWeightedMass;
         }
@@ -126,10 +126,10 @@ void SnowSolver::update() {
         auto &gridNode = gridNodes[i];
 
         // Compute velocity
-        if (glm::length(gridNode.velocity(tick)) > 0 && gridNode.mass > 0) {
-            gridNode.velocity(tick) /= gridNode.mass;
+        if (glm::length(gridNode.velocity) > 0 && gridNode.mass > 0) {
+            gridNode.velocity /= gridNode.mass;
         } else {
-            gridNode.velocity(tick) = {};
+            gridNode.velocity = {};
         }
 
     }
@@ -229,7 +229,7 @@ void SnowSolver::update() {
 
         // 4
 
-        gridNode.velocity_star = gridNode.velocity(tick);
+        gridNode.velocity_star = gridNode.velocity;
         if (glm::length(gridNode.force) > 0 && gridNode.mass > 0) {
             gridNode.velocity_star += delta_t * gridNode.force / gridNode.mass;
         }
@@ -262,16 +262,7 @@ void SnowSolver::update() {
         for (auto i = 0; i < numGridNodes; i++) {
             auto &gridNode = gridNodes[i];
 
-            gridNodes[i].velocity(tick + 1) = velocity_next[i];
-
-        }
-
-    } else {
-
-        for (auto i = 0; i < numGridNodes; i++) {
-            auto &gridNode = gridNodes[i];
-
-            gridNode.velocity(tick + 1) = gridNode.velocity_star;
+            gridNodes[i].velocity_star = velocity_next[i];
 
         }
 
@@ -300,7 +291,7 @@ void SnowSolver::update() {
             if (!isValidGridNode(gx, gy, gz)) continue;
             auto &gridNode = this->gridNode(gx, gy, gz);
 
-            nabla_v += glm::outerProduct(gridNode.velocity(tick + 1), particleNode.nabla_weight[i]);
+            nabla_v += glm::outerProduct(gridNode.velocity_star, particleNode.nabla_weight[i]);
 
         }
 
@@ -323,7 +314,7 @@ void SnowSolver::update() {
         // 8
 
         auto v_pic = glm::dvec3();
-        auto v_flip = particleNode.velocity(tick);
+        auto v_flip = particleNode.velocity;
 
         // Nearby weighted grid nodes
         for (unsigned int i = 0; i < 64; i++) {
@@ -334,8 +325,8 @@ void SnowSolver::update() {
             auto &gridNode = this->gridNode(gx, gy, gz);
 
             auto w = particleNode.weight[i];
-            auto gv = gridNode.velocity(tick);
-            auto gv1 = gridNode.velocity(tick + 1);
+            auto gv = gridNode.velocity;
+            auto gv1 = gridNode.velocity_star;
 
             v_pic += gv1 * w;
             v_flip += (gv1 - gv) * w;
@@ -349,11 +340,11 @@ void SnowSolver::update() {
         if (handleNodeCollisionVelocityUpdate)
             handleNodeCollisionVelocityUpdate(particleNode);
 
-        particleNode.velocity(tick + 1) = particleNode.velocity_star;
+        particleNode.velocity = particleNode.velocity_star;
 
         // 10
 
-        particleNode.position += delta_t * particleNode.velocity(tick + 1);
+        particleNode.position += delta_t * particleNode.velocity;
 
     }
 
@@ -542,7 +533,7 @@ void SnowSolver::saveState(std::string const &filename) {
     SNOW_SOLVER_STATE_PARTICLE particleState{};
     for (auto const &particleNode : particleNodes) {
         particleState.position = particleNode.position;
-        particleState.velocity = particleNode.velocity(tick);
+        particleState.velocity = particleNode.velocity;
         particleState.mass = particleNode.mass;
         particleState.volume0 = particleNode.volume0;
         particleState.deformElastic = particleNode.deformElastic;
@@ -579,7 +570,7 @@ void SnowSolver::loadState(std::string const &filename) {
         file.read(reinterpret_cast<char *>(&particleState), sizeof(SNOW_SOLVER_STATE_PARTICLE));
 
         particleNode.position = particleState.position;
-        particleNode.velocity(tick) = particleState.velocity;
+        particleNode.velocity = particleState.velocity;
         particleNode.mass = particleState.mass;
         particleNode.volume0 = particleState.volume0;
         particleNode.deformElastic = particleState.deformElastic;

@@ -5,22 +5,17 @@
 #include "Node.h"
 
 
-class LavaGridFaceNode : Node {
-
-    friend class LavaSolver;
-
-public:
+struct LavaGridFaceNode : public Node {
 
     LavaGridFaceNode(glm::dvec3 const &position, glm::uvec3 const &location) : Node(position), location(location) {}
 
-protected:
-
     glm::uvec3 location;
-    double force;
-    double velocity;
-    double thermalConductivity;
 
-    bool colliding;
+    double force{};
+
+    double thermalConductivity{};
+
+    bool colliding{};
 
 };
 

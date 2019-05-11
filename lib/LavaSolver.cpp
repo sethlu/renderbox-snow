@@ -120,7 +120,7 @@ void LavaSolver::update() {
         auto &cellNode = gridCellNodes[i];
 
         cellNode.mass = 0;
-        cellNode.velocity(tick) = {};
+        cellNode.velocity = {};
         cellNode.j = 0;
         cellNode.je = 0;
         cellNode.specificHeat = 0;
@@ -133,21 +133,21 @@ void LavaSolver::update() {
         auto &faceNode = gridFaceXNodes[i];
 
         faceNode.mass = 0;
-        faceNode.velocity = 0;
+        faceNode.velocity = {};
         faceNode.thermalConductivity = 0;
     }
     for (auto i = 0; i < numGridFaceYNodes; i++) {
         auto &faceNode = gridFaceYNodes[i];
 
         faceNode.mass = 0;
-        faceNode.velocity = 0;
+        faceNode.velocity = {};
         faceNode.thermalConductivity = 0;
     }
     for (auto i = 0; i < numGridFaceZNodes; i++) {
         auto &faceNode = gridFaceZNodes[i];
 
         faceNode.mass = 0;
-        faceNode.velocity = 0;
+        faceNode.velocity = {};
         faceNode.thermalConductivity = 0;
     }
 
@@ -182,7 +182,7 @@ void LavaSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.cell_weight[i];
 
             cellNode.mass += particleWeightedMass;
-            cellNode.velocity(tick) += particleNode.velocity(tick) * particleWeightedMass;
+            cellNode.velocity += particleNode.velocity * particleWeightedMass;
             cellNode.j += j * particleWeightedMass;
             cellNode.je += je * particleWeightedMass;
             cellNode.specificHeat += particleNode.specificHeat * particleWeightedMass;
@@ -205,7 +205,7 @@ void LavaSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.face_x_weight[i];
 
             faceNode.mass += particleWeightedMass;
-            faceNode.velocity += particleNode.velocity(tick).x * particleWeightedMass;
+            faceNode.velocity += particleNode.velocity * particleWeightedMass;
             faceNode.thermalConductivity += particleNode.thermalConductivity * particleWeightedMass;
         }
         for (unsigned int i = 0; i < 64; i++) {
@@ -222,7 +222,7 @@ void LavaSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.face_y_weight[i];
 
             faceNode.mass += particleWeightedMass;
-            faceNode.velocity += particleNode.velocity(tick).y * particleWeightedMass;
+            faceNode.velocity += particleNode.velocity * particleWeightedMass;
             faceNode.thermalConductivity += particleNode.thermalConductivity * particleWeightedMass;
         }
         for (unsigned int i = 0; i < 64; i++) {
@@ -239,7 +239,7 @@ void LavaSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.face_z_weight[i];
 
             faceNode.mass += particleWeightedMass;
-            faceNode.velocity += particleNode.velocity(tick).z * particleWeightedMass;
+            faceNode.velocity += particleNode.velocity * particleWeightedMass;
             faceNode.thermalConductivity += particleNode.thermalConductivity * particleWeightedMass;
         }
 
@@ -249,7 +249,7 @@ void LavaSolver::update() {
         auto &cellNode = gridCellNodes[i];
 
         if (cellNode.mass > 0) {
-            cellNode.velocity(tick) /= cellNode.mass;
+            cellNode.velocity /= cellNode.mass;
             cellNode.j /= cellNode.mass;
             cellNode.je /= cellNode.mass;
             cellNode.jp = cellNode.j / cellNode.je;
@@ -257,7 +257,7 @@ void LavaSolver::update() {
             cellNode.temperature /= cellNode.mass;
             cellNode.inv_lambda /= cellNode.mass;
         } else {
-            cellNode.velocity(tick) = {};
+            cellNode.velocity = {};
             cellNode.j = 0;
             cellNode.je = 0;
             cellNode.jp = 0;
@@ -471,7 +471,7 @@ void LavaSolver::update() {
         auto &faceNode = gridFaceXNodes[i];
 
         if (faceNode.force != 0 && faceNode.mass > 0) {
-            faceNode.velocity_star = glm::dvec3(faceNode.velocity + delta_t * faceNode.force / faceNode.mass, 0, 0);
+            faceNode.velocity_star = faceNode.velocity + delta_t * faceNode.force / faceNode.mass;
         } else {
             faceNode.velocity_star = {};
         }
@@ -480,7 +480,7 @@ void LavaSolver::update() {
         auto &faceNode = gridFaceYNodes[i];
 
         if (faceNode.force != 0 && faceNode.mass > 0) {
-            faceNode.velocity_star = glm::dvec3(0, faceNode.velocity + delta_t * faceNode.force / faceNode.mass, 0);
+            faceNode.velocity_star = faceNode.velocity + delta_t * faceNode.force / faceNode.mass;
         } else {
             faceNode.velocity_star = {};
         }
@@ -489,7 +489,7 @@ void LavaSolver::update() {
         auto &faceNode = gridFaceZNodes[i];
 
         if (faceNode.force != 0 && faceNode.mass > 0) {
-            faceNode.velocity_star = glm::dvec3(0, 0, faceNode.velocity + delta_t * faceNode.force / faceNode.mass);
+            faceNode.velocity_star = faceNode.velocity + delta_t * faceNode.force / faceNode.mass;
         } else {
             faceNode.velocity_star = {};
         }
@@ -503,19 +503,16 @@ void LavaSolver::update() {
             auto &faceNode = gridFaceXNodes[i];
 
             handleNodeCollisionVelocityUpdate(faceNode);
-            faceNode.velocity_star = glm::dvec3(faceNode.velocity_star.x, 0, 0);
         }
         for (auto i = 0; i < numGridFaceYNodes; i++) {
             auto &faceNode = gridFaceYNodes[i];
 
             handleNodeCollisionVelocityUpdate(faceNode);
-            faceNode.velocity_star = glm::dvec3(0, faceNode.velocity_star.y, 0);
         }
         for (auto i = 0; i < numGridFaceZNodes; i++) {
             auto &faceNode = gridFaceZNodes[i];
 
             handleNodeCollisionVelocityUpdate(faceNode);
-            faceNode.velocity_star = glm::dvec3(0, 0, faceNode.velocity_star.z);
         }
 
     }
@@ -577,7 +574,7 @@ void LavaSolver::update() {
         auto gfzmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1, 1, 0.5));
 
         auto v_pic = glm::dvec3();
-        auto v_flip = particleNode.velocity(tick);
+        auto v_flip = particleNode.velocity;
 
         // Nearby weighted grid face nodes
         for (unsigned int i = 0; i < 64; i++) {
@@ -588,7 +585,7 @@ void LavaSolver::update() {
             auto &faceNode = this->gridFaceXNode(gx, gy, gz);
 
             auto w = particleNode.face_x_weight[i];
-            auto gv = faceNode.velocity;
+            auto gv = faceNode.velocity.x;
             auto gv1 = faceNode.velocity_star.x;
 
             v_pic.x += gv1 * w;
@@ -603,7 +600,7 @@ void LavaSolver::update() {
             auto &faceNode = this->gridFaceYNode(gx, gy, gz);
 
             auto w = particleNode.face_y_weight[i];
-            auto gv = faceNode.velocity;
+            auto gv = faceNode.velocity.y;
             auto gv1 = faceNode.velocity_star.y;
 
             v_pic.y += gv1 * w;
@@ -618,7 +615,7 @@ void LavaSolver::update() {
             auto &faceNode = this->gridFaceZNode(gx, gy, gz);
 
             auto w = particleNode.face_z_weight[i];
-            auto gv = faceNode.velocity;
+            auto gv = faceNode.velocity.z;
             auto gv1 = faceNode.velocity_star.z;
 
             v_pic.z += gv1 * w;
@@ -633,9 +630,9 @@ void LavaSolver::update() {
         if (handleNodeCollisionVelocityUpdate)
             handleNodeCollisionVelocityUpdate(particleNode);
 
-        particleNode.velocity(tick + 1) = particleNode.velocity_star;
+        particleNode.velocity = particleNode.velocity_star;
 
-        particleNode.position += delta_t * particleNode.velocity(tick + 1);
+        particleNode.position += delta_t * particleNode.velocity;
 
     }
 

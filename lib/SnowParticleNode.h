@@ -5,19 +5,14 @@
 #include "Node.h"
 
 
-class SnowParticleNode : public Node {
-
-    friend class SnowSolver;
-
-public:
+struct SnowParticleNode : public Node {
 
     SnowParticleNode(glm::dvec3 const &position, double mass) : Node(position) {
         this->mass = mass;
     }
 
-protected:
-
     double volume0;
+
     glm::dmat3 deformElastic = glm::dmat3(1);
     glm::dmat3 deformPlastic = glm::dmat3(1);
 

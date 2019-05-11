@@ -5,11 +5,7 @@
 #include "Node.h"
 
 
-class LavaParticleNode : public Node {
-
-    friend class LavaSolver;
-
-public:
+struct LavaParticleNode : public Node {
 
     LavaParticleNode(glm::dvec3 const &position, double mass) : Node(position) {
         this->mass = mass;
@@ -53,25 +49,25 @@ public:
 
     double latentEnergy = 0; // [J]
 
-protected:
-
     double mu0;
     double lambda0;
-    double volume0;
+
+    double volume0{};
+
     glm::dmat3 deformElastic = glm::dmat3(1);
     glm::dmat3 deformPlastic = glm::dmat3(1);
 
     // Memoized for each update
 
     // Weights
-    double cell_weight[64];
-    glm::dvec3 cell_nabla_weight[64];
-    double face_x_weight[64];
-    glm::dvec3 face_x_nabla_weight[64];
-    double face_y_weight[64];
-    glm::dvec3 face_y_nabla_weight[64];
-    double face_z_weight[64];
-    glm::dvec3 face_z_nabla_weight[64];
+    double cell_weight[64]{};
+    glm::dvec3 cell_nabla_weight[64]{};
+    double face_x_weight[64]{};
+    glm::dvec3 face_x_nabla_weight[64]{};
+    double face_y_weight[64]{};
+    glm::dvec3 face_y_nabla_weight[64]{};
+    double face_z_weight[64]{};
+    glm::dvec3 face_z_nabla_weight[64]{};
 
 };
 

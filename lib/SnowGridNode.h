@@ -5,19 +5,15 @@
 #include "Node.h"
 
 
-class SnowGridNode : public Node {
-
-    friend class SnowSolver;
-
-public:
+struct SnowGridNode : public Node {
 
     SnowGridNode(glm::dvec3 const &position, glm::uvec3 const &location) : Node(position), location(location) {}
 
-protected:
-
-    double density0;
     glm::uvec3 location;
-    glm::dvec3 force;
+
+    glm::dvec3 force{};
+
+    double density0{}; // TODO: Use temporary array instead?
 
 };
 
