@@ -26,7 +26,7 @@ static void demoRenderLoopUpdate(unsigned int frame) {
 
 }
 
-void launchDemoButterball(int argc, char const **argv) {
+void launchDemoLavaSnowball(int argc, char const **argv) {
 
     // Simulation
 
