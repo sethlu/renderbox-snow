@@ -4,8 +4,8 @@
 
 #include <vector>
 
-#include "ParticleNode.h"
-#include "GridNode.h"
+#include "SnowParticleNode.h"
+#include "SnowGridNode.h"
 #include "Solver.h"
 
 
@@ -39,7 +39,7 @@ public:
 
     explicit SnowSolver(std::string const &filename);
 
-    std::vector<ParticleNode> particleNodes;
+    std::vector<SnowParticleNode> particleNodes;
 
     void propagateSimulationParametersUpdate();
 
@@ -63,11 +63,11 @@ public:
         return (x * size.y + y) * size.z + z;
     }
 
-    GridNode &gridNode(unsigned int x, unsigned int y, unsigned int z) {
+    SnowGridNode &gridNode(unsigned int x, unsigned int y, unsigned int z) {
         return gridNodes[getGridNodeIndex(x, y, z)];
     }
 
-    GridNode &gridNode(glm::uvec3 location) {
+    SnowGridNode &gridNode(glm::uvec3 location) {
         return gridNode(location.x, location.y, location.z);
     }
 
@@ -154,7 +154,7 @@ private:
     double lambda0;
     double mu0;
     double invh;
-    std::vector<GridNode> gridNodes;
+    std::vector<SnowGridNode> gridNodes;
 
     // Helper methods
 
@@ -187,11 +187,11 @@ private:
         return invh * glm::dvec3(dnx * ny * nz, nx * dny * nz, nx * ny * dnz);
     }
 
-    double weight(GridNode const &i, ParticleNode const &p) {
+    double weight(SnowGridNode const &i, SnowParticleNode const &p) {
         return n(i.position, p.position);
     }
 
-    glm::dvec3 nabla_weight(GridNode const &i, ParticleNode const &p) {
+    glm::dvec3 nabla_weight(SnowGridNode const &i, SnowParticleNode const &p) {
         return nabla_n(i.position, p.position);
     }
 

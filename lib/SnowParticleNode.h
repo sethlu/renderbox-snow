@@ -5,13 +5,13 @@
 #include "Node.h"
 
 
-class ParticleNode : public Node {
+class SnowParticleNode : public Node {
 
     friend class SnowSolver;
 
 public:
 
-    ParticleNode(glm::dvec3 const &position, double mass) : Node(position) {
+    SnowParticleNode(glm::dvec3 const &position, double mass) : Node(position) {
         this->mass = mass;
     }
 

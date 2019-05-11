@@ -557,8 +557,8 @@ void SnowSolver::saveState(std::string const &filename) {
 void SnowSolver::loadState(std::string const &filename) {
     std::ifstream file(filename, std::ifstream::binary);
 
-    ParticleNode emptyParticleNode{{},
-                                   {}};
+    SnowParticleNode emptyParticleNode{{},
+                                       {}};
 
     SNOW_SOLVER_STATE_HEADER solverStateHeader{};
     file.read(reinterpret_cast<char *>(&solverStateHeader), sizeof(SNOW_SOLVER_STATE_HEADER));

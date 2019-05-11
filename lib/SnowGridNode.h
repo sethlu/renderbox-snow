@@ -5,13 +5,13 @@
 #include "Node.h"
 
 
-class GridNode : public Node {
+class SnowGridNode : public Node {
 
     friend class SnowSolver;
 
 public:
 
-    GridNode(glm::dvec3 const &position, glm::uvec3 const &location) : Node(position), location(location) {}
+    SnowGridNode(glm::dvec3 const &position, glm::uvec3 const &location) : Node(position), location(location) {}
 
 protected:
 
