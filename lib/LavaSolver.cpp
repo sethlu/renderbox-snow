@@ -330,7 +330,7 @@ void LavaSolver::update() {
     }
 
     conjugateResidualSolver(this, &LavaSolver::implicitHeatIntegrationMatrix,
-                            next_temperature, temperature, 50, 1);
+                            next_quantity, quantity, 50);
 
     for (auto c = 0; c < numGridCellNodes; c++) {
         auto &cellNode = gridCellNodes[c];

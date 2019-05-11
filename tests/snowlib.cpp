@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_SUITE(test_conjugate_gradient_method)
         std::vector<double> x = {0, 0, 0};
 
         // Solve Ax = b
-        conjugateResidualSolver(A, x, b, 2000, 0.001);
+        conjugateResidualSolver(A, x, b, 2000);
 
         BOOST_TEST(x[0] == 0.25);
         BOOST_TEST(x[1] == 0.25);
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_SUITE(test_conjugate_gradient_method)
         };
 
         // Solve Ax = b
-        conjugateResidualSolver(B, x, b, 2000, 0.001);
+        conjugateResidualSolver(B, x, b, 2000);
 
         BOOST_TEST(x[0][0] == 0.25);
         BOOST_TEST(x[0][1] == 0.25);

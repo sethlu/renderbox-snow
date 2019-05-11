@@ -257,7 +257,7 @@ void SnowSolver::update() {
         }
 
         conjugateResidualSolver(this, &SnowSolver::implicitVelocityIntegrationMatrix,
-                                velocity_next, velocity_star, 500, 1e-10);
+                                velocity_next, velocity_star, 300);
 
         for (auto i = 0; i < numGridNodes; i++) {
             auto &gridNode = gridNodes[i];

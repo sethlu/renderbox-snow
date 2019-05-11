@@ -72,29 +72,6 @@ inline std::vector<V> operator-(std::vector<V> const &a, std::vector<V> const &b
     return result;
 }
 
-// Vector tolerance check
-template<typename V>
-inline bool operator>(std::vector<V> const &a, double tolerance) {
-
-    V result = {};
-    for (size_t i = 0, n = a.size(); i < n; i++) {
-        result += a[i] * a[i];
-    }
-
-    return result / a.size() > tolerance * tolerance;
-}
-
-// Vector of vec3 tolerance check
-inline bool operator>(std::vector<glm::dvec3> const &a, double tolerance) {
-
-    double result = {};
-    for (size_t i = 0, n = a.size(); i < n; i++) {
-        result += glm::dot(a[i], a[i]);
-    }
-
-    return result / a.size() > tolerance * tolerance;
-}
-
 /**
  * Solves Ax = b
  * The initial guess is passed in as x
@@ -104,14 +81,16 @@ template<typename V>
 inline void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V> const &x),
                                     std::vector<V> &x,
                                     std::vector<V> const &b,
-                                    int k,
-                                    double tolerance) {
+                                    int k) {
     std::vector<V> Ax(b.size());
 
     // Ax_0
     A(Ax, x);
 
+    // r_0
     auto r = b - Ax;
+
+    // p_0
     auto p = r;
 
     std::vector<V> Ar(b.size());
@@ -121,7 +100,7 @@ inline void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V>
     std::vector<V> Ap(b.size());
     A(Ap, p);
 
-    while (k-- > 0 && r > tolerance) {
+    while (k-- > 0) {
         LOG(VERBOSE) << "Solving k=" << k << std::endl;
 
         // r_k^T Ar_k
@@ -129,6 +108,8 @@ inline void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V>
 
         // a_k
         auto a = dot_r_Ar_k / (Ap * Ap);
+
+        if (abs(a) < FLT_EPSILON) break; // Non-standard: Break if insignificant increment
 
         // x_k+1
         x = x + a * p;
@@ -138,9 +119,13 @@ inline void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V>
 
         // Ar_k+1
         A(Ar, r);
+
         dot_r_Ar = r * Ar;
+
         // b_k
         auto beta = dot_r_Ar / dot_r_Ar_k;
+
+        if (abs(beta) < FLT_EPSILON) break; // Non-standard: Break if insignificant increment
 
         // p_k+1
         p = r + beta * p;
@@ -150,9 +135,11 @@ inline void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V>
 
     }
 
-    if (k > 0) LOG(VERBOSE) << "Converged at k=" << k << std::endl;
-    else
+    if (k > 0) {
+        LOG(VERBOSE) << "Converged at k=" << k << std::endl;
+    } else {
         LOG(VERBOSE) << "Didn't converge" << std::endl;
+    }
 
 }
 
@@ -166,14 +153,16 @@ inline void conjugateResidualSolver(C *instance,
                                     void (C::*A)(std::vector<V> &Ax, std::vector<V> const &x),
                                     std::vector<V> &x,
                                     std::vector<V> const &b,
-                                    int k,
-                                    double tolerance) {
+                                    int k) {
     std::vector<V> Ax(b.size());
 
     // Ax_0
     (instance->*A)(Ax, x);
 
+    // r_0
     auto r = b - Ax;
+
+    // p_0
     auto p = r;
 
     std::vector<V> Ar(b.size());
@@ -183,7 +172,7 @@ inline void conjugateResidualSolver(C *instance,
     std::vector<V> Ap(b.size());
     (instance->*A)(Ap, p);
 
-    while (k-- > 0 && r > tolerance) {
+    while (k-- > 0) {
         LOG(VERBOSE) << "Solving k=" << k << std::endl;
 
         // r_k^T Ar_k
@@ -191,6 +180,8 @@ inline void conjugateResidualSolver(C *instance,
 
         // a_k
         auto a = dot_r_Ar_k / (Ap * Ap);
+
+        if (abs(a) < FLT_EPSILON) break; // Non-standard: Break if insignificant increment
 
         // x_k+1
         x = x + a * p;
@@ -200,9 +191,13 @@ inline void conjugateResidualSolver(C *instance,
 
         // Ar_k+1
         (instance->*A)(Ar, r);
+
         dot_r_Ar = r * Ar;
+
         // b_k
         auto beta = dot_r_Ar / dot_r_Ar_k;
+
+        if (abs(beta) < FLT_EPSILON) break; // Non-standard: Break if insignificant increment
 
         // p_k+1
         p = r + beta * p;
@@ -212,9 +207,11 @@ inline void conjugateResidualSolver(C *instance,
 
     }
 
-    if (k > 0) LOG(VERBOSE) << "Converged at k=" << k << std::endl;
-    else
+    if (k > 0) {
+        LOG(VERBOSE) << "Converged at k=" << k << std::endl;
+    } else {
         LOG(VERBOSE) << "Didn't converge" << std::endl;
+    }
 
 }
 
