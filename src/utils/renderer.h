@@ -125,6 +125,7 @@ static void initRenderer() {
     // Scene
 
     scene = std::make_shared<renderbox::Scene>();
+    scene->setAmbientColor({0.1, 0.1, 0.1});
 
     // Light
 
@@ -157,7 +158,7 @@ static void initRenderer() {
 
     // Particles
 
-    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(0.005, 0.005, 0.005);
+    snowParticleGeometry = std::make_shared<renderbox::SphereGeometry>(0.0025);
     if (!ghostSolver) {
         snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 1, 1));
     } else {
