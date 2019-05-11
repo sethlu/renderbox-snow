@@ -13,13 +13,50 @@
 class LavaSolver : public Solver {
 public:
 
+    struct LAVA_SOLVER_STATE_HEADER {
+        unsigned short type; // LA
+        unsigned int headerSize;
+        float h;
+        glm::uvec3 size;
+        unsigned int tick;
+        float delta_t;
+        float alpha;
+        size_t numParticles;
+    };
+
+    struct LAVA_SOLVER_STATE_PARTICLE {
+        glm::dvec3 position;
+        glm::dvec3 velocity;
+        float mass;
+        float temperature;
+        float criticalCompression;
+        float criticalStretch;
+        float hardeningCoefficient;
+        float youngsModulus0;
+        float poissonsRatio;
+        float thermalConductivity;
+        float specificHeat;
+        float fusionTemperature;
+        float latentHeatOfFusion;
+        float latentHeat;
+        float volume0;
+        glm::dmat3 deformElastic;
+        glm::dmat3 deformPlastic;
+    };
+
     LavaSolver(double h, glm::uvec3 const &size);
+
+    explicit LavaSolver(std::string const &filename);
 
     std::vector<LavaParticleNode> particleNodes;
 
     void propagateSimulationParametersUpdate();
 
     void update();
+
+    void saveState(std::string const &filename);
+
+    void loadState(std::string const &filename);
 
     bool (*isNodeColliding)(Node &node);
 
@@ -141,7 +178,7 @@ public:
                                        latentEnergyOfFusion / node.mass /
                                        node.specificHeat; // Compensate for phase change
                 } else {
-                    node.latentEnergy = node.latentHeatOfFusion - joules;
+                    node.latentHeat = node.latentHeatOfFusion - joules;
                     node.temperature = node.fusionTemperature;
                 }
             }
@@ -163,14 +200,14 @@ public:
                                        latentEnergyOfFusion / node.mass /
                                        node.specificHeat; // Compensate for phase change
                 } else {
-                    node.latentEnergy = joules;
+                    node.latentHeat = joules;
                     node.temperature = node.fusionTemperature;
                 }
             }
         } else {
             // Melting/freezing
 
-            auto newLatentEnergy = node.latentEnergy + node.specificHeat * node.mass * temperatureDifference;
+            auto newLatentEnergy = node.latentHeat + node.specificHeat * node.mass * temperatureDifference;
             if (newLatentEnergy > latentEnergyOfFusion) {
                 // Melted
 
@@ -182,7 +219,7 @@ public:
                 node.temperature += newLatentEnergy / node.mass / node.specificHeat; // Compensate for phase change
             } else {
                 // Still in phase-change state
-                node.latentEnergy = newLatentEnergy;
+                node.latentHeat = newLatentEnergy;
             }
         }
     }

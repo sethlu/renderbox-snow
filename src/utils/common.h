@@ -3,8 +3,18 @@
 
 #ifndef SOLVER
 #define SOLVER SnowSolver
-#define SOLVER_SNOW 1
-#endif //SOLVER
+#define SOLVER_SNOW
+#endif
+
+#ifdef SOLVER_LAVA
+#define SOLVER_STATE_EXT ".lavastate"
+#else
+#define SOLVER_STATE_EXT ".snowstate"
+#endif
+
+#include "../../lib/SnowSolver.h"
+#include "../../lib/LavaSolver.h"
+
 
 static std::unique_ptr<SOLVER> solver;
 

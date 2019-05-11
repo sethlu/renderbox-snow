@@ -1,4 +1,4 @@
-#include "../../lib/SnowSolver.h"
+#include "../../lib/Node.h"
 
 
 static void handleNodeCollisionVelocityUpdate(Node &node) {

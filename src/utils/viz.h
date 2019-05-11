@@ -4,8 +4,6 @@
 #include <sstream>
 #include <sys/stat.h>
 
-#include "../../lib/SnowSolver.h"
-
 #ifdef VIZ_RENDER
 #define RENDERER_NO_LIMIT_FRAMERATE
 #endif
@@ -37,9 +35,9 @@ static void initViz(int argc, char const **argv) {
 #endif //VIZ_RENDER
 
     std::ostringstream filename;
-    filename << "frame-" << startFrame << ".snowstate";
+    filename << "frame-" << startFrame << SOLVER_STATE_EXT;
 
-    solver.reset(new SnowSolver(joinPath(dir, filename.str())));
+    solver.reset(new SOLVER(joinPath(dir, filename.str())));
 
     // Rendering
 
@@ -51,7 +49,7 @@ static void vizRenderLoopUpdate(unsigned int frame) {
 
     unsigned int wrappedFrame = startFrame + frame % (endFrame - startFrame);
     std::ostringstream filename;
-    filename << "frame-" << wrappedFrame << ".snowstate";
+    filename << "frame-" << wrappedFrame << SOLVER_STATE_EXT;
     solver->loadState(joinPath(dir, filename.str()));
 
 }

@@ -1,7 +1,6 @@
 #include <memory>
 #include <sstream>
 
-#include "../lib/SnowSolver.h"
 #include "utils/common.h"
 #include "snow/sphere.h"
 
@@ -31,7 +30,7 @@ void launchSimGenSnowball(int argc, char const **argv) {
     // Output
 
     std::ostringstream filename;
-    filename << "frame-0.snowstate";
+    filename << "frame-0" SOLVER_STATE_EXT;
     solver->saveState(filename.str());
 
     std::cout << "Frame 0 written to: " << filename.str() << std::endl;

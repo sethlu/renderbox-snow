@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_SUITE(test_temperature)
 
         while (node.temperature < 50) {
             LavaSolver::applyTemperatureDifference(node, 1);
-            std::cout << node.temperature << " " << node.latentEnergy << std::endl;
+            std::cout << node.temperature << " " << node.latentHeat << std::endl;
         }
 
     }
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_SUITE(test_temperature)
 
         while (node.temperature < 50) {
             LavaSolver::applyTemperatureDifference(node, 50);
-            std::cout << node.temperature << " " << node.latentEnergy << std::endl;
+            std::cout << node.temperature << " " << node.latentHeat << std::endl;
         }
 
     }
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_SUITE(test_temperature)
 
         while (node.temperature > 20) {
             LavaSolver::applyTemperatureDifference(node, -1);
-            std::cout << node.temperature << " " << node.latentEnergy << std::endl;
+            std::cout << node.temperature << " " << node.latentHeat << std::endl;
         }
 
     }
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_SUITE(test_temperature)
 
         while (node.temperature > 20) {
             LavaSolver::applyTemperatureDifference(node, -50);
-            std::cout << node.temperature << " " << node.latentEnergy << std::endl;
+            std::cout << node.temperature << " " << node.latentHeat << std::endl;
         }
 
     }

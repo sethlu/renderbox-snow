@@ -7,7 +7,6 @@
 
 #include "renderbox.h"
 
-#include "../lib/SnowSolver.h"
 #include "utils/renderer.h"
 #include "scenes/scene0.h"
 #include "snow/sphere.h"

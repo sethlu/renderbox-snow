@@ -1,4 +1,4 @@
-#include "../lib/SnowSolver.h"
+#include "utils/common.h"
 
 
 void launchInfo(int argc, char const **argv) {

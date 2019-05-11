@@ -8,6 +8,7 @@
 #include "renderbox.h"
 
 #define SOLVER LavaSolver
+#define SOLVER_LAVA
 
 #include "../lib/LavaSolver.h"
 #include "utils/renderer.h"
@@ -26,7 +27,7 @@ static void demoRenderLoopUpdate(unsigned int frame) {
 
 }
 
-void launchDemoLavaSnowball(int argc, char const **argv) {
+void lavaLaunchDemoSnowball(int argc, char const **argv) {
 
     // Simulation
 
@@ -41,7 +42,7 @@ void launchDemoLavaSnowball(int argc, char const **argv) {
     solver->isNodeColliding = isNodeColliding;
     solver->handleNodeCollisionVelocityUpdate = handleNodeCollisionVelocityUpdate;
 
-    genSnowSphere(glm::dvec3(0.5, 0.5, 0.28), 0.08, density, particleSize);
+    genSnowSphere(glm::dvec3(0.5, 0.5, 0.3), 0.1, density, particleSize);
 
     // Rendering
 

@@ -47,7 +47,7 @@ struct LavaParticleNode : public Node {
 
     // Record keeping
 
-    double latentEnergy = 0; // [J]
+    double latentHeat = 0; // [J]
 
     double mu0;
     double lambda0;

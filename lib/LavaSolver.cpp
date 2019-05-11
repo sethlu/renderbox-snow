@@ -1,5 +1,7 @@
 #include "LavaSolver.h"
 
+#include <fstream>
+
 #include <glm/gtc/type_ptr.hpp>
 #include <Dense>
 
@@ -9,6 +11,14 @@
 typedef Eigen::Matrix<double, 3, 3> eigen_matrix3;
 typedef Eigen::Matrix<double, 3, 1> eigen_vector3;
 
+
+LavaSolver::LavaSolver(double h, glm::uvec3 const &size) : h(h), size(size) {
+
+}
+
+LavaSolver::LavaSolver(std::string const &filename) {
+    loadState(filename);
+}
 
 inline void svd(glm::dmat3 const &m, glm::dmat3 &u, glm::dvec3 &e, glm::dmat3 &v) {
     Eigen::Map<eigen_matrix3 const> mmap(glm::value_ptr(m));
@@ -46,10 +56,6 @@ glm::dmat3 deformationUpdateR(glm::dmat3 m) {
     }
     auto t = deformationUpdateR(0.5 * m);
     return t * t;
-}
-
-LavaSolver::LavaSolver(double h, glm::uvec3 const &size) : h(h), size(size) {
-
 }
 
 void LavaSolver::propagateSimulationParametersUpdate() {
@@ -835,4 +841,95 @@ void LavaSolver::implicitHeatIntegrationMatrix(std::vector<double> &Ax,
 
     }
 
+}
+
+void LavaSolver::saveState(std::string const &filename) {
+    std::ofstream file;
+    file.open(filename, std::ofstream::binary | std::ofstream::trunc);
+
+    LAVA_SOLVER_STATE_HEADER solverStateHeader{
+            'LA',
+            sizeof(LAVA_SOLVER_STATE_HEADER),
+            static_cast<float>(h),
+            size,
+            tick,
+            static_cast<float>(delta_t),
+            static_cast<float>(alpha),
+            particleNodes.size()
+    };
+
+    file.write(reinterpret_cast<char *>(&solverStateHeader), sizeof(LAVA_SOLVER_STATE_HEADER));
+
+    LAVA_SOLVER_STATE_PARTICLE particleState{};
+    for (auto const &particleNode : particleNodes) {
+        particleState.position = particleNode.position;
+        particleState.velocity = particleNode.velocity;
+        particleState.mass = particleNode.mass;
+        particleState.temperature = particleNode.temperature;
+        particleState.criticalCompression = particleNode.criticalCompression;
+        particleState.criticalStretch = particleNode.criticalStretch;
+        particleState.hardeningCoefficient = particleNode.hardeningCoefficient;
+        particleState.youngsModulus0 = particleNode.youngsModulus0;
+        particleState.poissonsRatio = particleNode.poissonsRatio;
+        particleState.thermalConductivity = particleNode.thermalConductivity;
+        particleState.specificHeat = particleNode.specificHeat;
+        particleState.fusionTemperature = particleNode.fusionTemperature;
+        particleState.latentHeatOfFusion = particleNode.latentHeatOfFusion;
+        particleState.latentHeat = particleNode.latentHeat;
+        particleState.volume0 = particleNode.volume0;
+        particleState.deformElastic = particleNode.deformElastic;
+        particleState.deformPlastic = particleNode.deformPlastic;
+
+        file.write(reinterpret_cast<char *>(&particleState), sizeof(LAVA_SOLVER_STATE_PARTICLE));
+    }
+
+    file.close();
+}
+
+void LavaSolver::loadState(std::string const &filename) {
+    std::ifstream file(filename, std::ifstream::binary);
+
+    LavaParticleNode emptyParticleNode{{},
+                                       {}};
+
+    LAVA_SOLVER_STATE_HEADER solverStateHeader{};
+    file.read(reinterpret_cast<char *>(&solverStateHeader), sizeof(LAVA_SOLVER_STATE_HEADER));
+    if (solverStateHeader.type != 'LA') {
+        LOG(ERROR) << "Unexpected file type" << std::endl;
+        return;
+    }
+
+    h = solverStateHeader.h;
+    size = solverStateHeader.size;
+    tick = solverStateHeader.tick;
+    delta_t = solverStateHeader.delta_t;
+    alpha = solverStateHeader.alpha;
+    particleNodes.resize(solverStateHeader.numParticles, emptyParticleNode);
+
+    LAVA_SOLVER_STATE_PARTICLE particleState{};
+    for (auto &particleNode : particleNodes) {
+        file.read(reinterpret_cast<char *>(&particleState), sizeof(LAVA_SOLVER_STATE_PARTICLE));
+
+        particleNode.position = particleState.position;
+        particleNode.velocity = particleState.velocity;
+        particleNode.mass = particleState.mass;
+        particleNode.temperature = particleState.temperature;
+        particleNode.criticalCompression = particleState.criticalCompression;
+        particleNode.criticalStretch = particleState.criticalStretch;
+        particleNode.hardeningCoefficient = particleState.hardeningCoefficient;
+        particleNode.youngsModulus0 = particleState.youngsModulus0;
+        particleNode.poissonsRatio = particleState.poissonsRatio;
+        particleNode.thermalConductivity = particleState.thermalConductivity;
+        particleNode.specificHeat = particleState.specificHeat;
+        particleNode.fusionTemperature = particleState.fusionTemperature;
+        particleNode.latentHeatOfFusion = particleState.latentHeatOfFusion;
+        particleNode.latentHeat = particleState.latentHeat;
+        particleNode.volume0 = particleState.volume0;
+        particleNode.deformElastic = particleState.deformElastic;
+        particleNode.deformPlastic = particleState.deformPlastic;
+    }
+
+    file.close();
+
+    simulationParametersDidUpdate = true;
 }

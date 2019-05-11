@@ -81,7 +81,7 @@ static void updateVizParticlePositions() {
     for (auto i = 0; i < numParticles; i++) {
         particles->children[i]->setTranslation(solver->particleNodes[i].position);
 
-#ifndef SOLVER_SNOW
+#ifdef SOLVER_LAVA
         if (solver->particleNodes[i].temperature > solver->particleNodes[i].fusionTemperature + FLT_EPSILON) {
             particles->children[i]->setMaterial(lavaParticleLiquidMaterial);
         } else if (solver->particleNodes[i].temperature < solver->particleNodes[i].fusionTemperature - FLT_EPSILON) {
@@ -89,7 +89,7 @@ static void updateVizParticlePositions() {
         } else {
             particles->children[i]->setMaterial(lavaParticlePhaseChangeMaterial);
         }
-#endif //SOLVER_SNOW
+#endif
     }
 
     if (ghostSolver) {
