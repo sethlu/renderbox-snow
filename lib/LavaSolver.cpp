@@ -1,7 +1,52 @@
 #include "LavaSolver.h"
 
+#include <glm/gtc/type_ptr.hpp>
+#include <Dense>
+
 #include "conjugate_residual_solver.h"
 
+
+typedef Eigen::Matrix<double, 3, 3> eigen_matrix3;
+typedef Eigen::Matrix<double, 3, 1> eigen_vector3;
+
+
+inline void svd(glm::dmat3 const &m, glm::dmat3 &u, glm::dvec3 &e, glm::dmat3 &v) {
+    Eigen::Map<eigen_matrix3 const> mmap(glm::value_ptr(m));
+    Eigen::Map<eigen_matrix3> umap(glm::value_ptr(u));
+    Eigen::Map<eigen_vector3> emap(glm::value_ptr(e));
+    Eigen::Map<eigen_matrix3> vmap(glm::value_ptr(v));
+
+    Eigen::JacobiSVD<eigen_matrix3, Eigen::NoQRPreconditioner> svd;
+    svd.compute(mmap, Eigen::ComputeFullV | Eigen::ComputeFullU);
+    umap = svd.matrixU();
+    emap = svd.singularValues();
+    vmap = svd.matrixV();
+}
+
+inline glm::dmat3 polarRot(glm::dmat3 const &m) {
+    glm::dmat3 u;
+    glm::dvec3 e;
+    glm::dmat3 v;
+    svd(m, u, e, v);
+    return u * glm::transpose(v);
+}
+
+inline void polarDecompose(glm::dmat3 const &m, glm::dmat3 &r, glm::dmat3 &s) {
+    glm::dmat3 u;
+    glm::dvec3 e;
+    glm::dmat3 v;
+    svd(m, u, e, v);
+    r = u * glm::transpose(v);
+    s = v * glm::dmat3(e.x, 0, 0, 0, e.y, 0, 0, 0, e.z) * glm::transpose(v);
+}
+
+glm::dmat3 deformationUpdateR(glm::dmat3 m) {
+    if (glm::determinant(glm::dmat3(1) + m) > 0) {
+        return glm::dmat3(1) + m;
+    }
+    auto t = deformationUpdateR(0.5 * m);
+    return t * t;
+}
 
 LavaSolver::LavaSolver(double h, glm::uvec3 const &size) : h(h), size(size) {
 
@@ -88,21 +133,21 @@ void LavaSolver::update() {
         auto &faceNode = gridFaceXNodes[i];
 
         faceNode.mass = 0;
-        faceNode.velocity(tick) = {};
+        faceNode.velocity = 0;
         faceNode.thermalConductivity = 0;
     }
     for (auto i = 0; i < numGridFaceYNodes; i++) {
         auto &faceNode = gridFaceYNodes[i];
 
         faceNode.mass = 0;
-        faceNode.velocity(tick) = {};
+        faceNode.velocity = 0;
         faceNode.thermalConductivity = 0;
     }
     for (auto i = 0; i < numGridFaceZNodes; i++) {
         auto &faceNode = gridFaceZNodes[i];
 
         faceNode.mass = 0;
-        faceNode.velocity(tick) = {};
+        faceNode.velocity = 0;
         faceNode.thermalConductivity = 0;
     }
 
@@ -157,10 +202,10 @@ void LavaSolver::update() {
             particleNode.face_x_weight[i] = weight(faceNode, particleNode);
             particleNode.face_x_nabla_weight[i] = nabla_weight(faceNode, particleNode);
 
-            auto particleWeightedMass = particleNode.mass * particleNode.cell_weight[i];
+            auto particleWeightedMass = particleNode.mass * particleNode.face_x_weight[i];
 
             faceNode.mass += particleWeightedMass;
-            faceNode.velocity(tick) += particleNode.velocity(tick) * particleWeightedMass;
+            faceNode.velocity += particleNode.velocity(tick).x * particleWeightedMass;
             faceNode.thermalConductivity += particleNode.thermalConductivity * particleWeightedMass;
         }
         for (unsigned int i = 0; i < 64; i++) {
@@ -174,10 +219,10 @@ void LavaSolver::update() {
             particleNode.face_y_weight[i] = weight(faceNode, particleNode);
             particleNode.face_y_nabla_weight[i] = nabla_weight(faceNode, particleNode);
 
-            auto particleWeightedMass = particleNode.mass * particleNode.cell_weight[i];
+            auto particleWeightedMass = particleNode.mass * particleNode.face_y_weight[i];
 
             faceNode.mass += particleWeightedMass;
-            faceNode.velocity(tick) += particleNode.velocity(tick) * particleWeightedMass;
+            faceNode.velocity += particleNode.velocity(tick).y * particleWeightedMass;
             faceNode.thermalConductivity += particleNode.thermalConductivity * particleWeightedMass;
         }
         for (unsigned int i = 0; i < 64; i++) {
@@ -191,10 +236,10 @@ void LavaSolver::update() {
             particleNode.face_z_weight[i] = weight(faceNode, particleNode);
             particleNode.face_z_nabla_weight[i] = nabla_weight(faceNode, particleNode);
 
-            auto particleWeightedMass = particleNode.mass * particleNode.cell_weight[i];
+            auto particleWeightedMass = particleNode.mass * particleNode.face_z_weight[i];
 
             faceNode.mass += particleWeightedMass;
-            faceNode.velocity(tick) += particleNode.velocity(tick) * particleWeightedMass;
+            faceNode.velocity += particleNode.velocity(tick).z * particleWeightedMass;
             faceNode.thermalConductivity += particleNode.thermalConductivity * particleWeightedMass;
         }
 
@@ -226,10 +271,10 @@ void LavaSolver::update() {
         auto &gridFaceNode = gridFaceXNodes[i];
 
         if (gridFaceNode.mass > 0) {
-            gridFaceNode.velocity(tick) /= gridFaceNode.mass;
+            gridFaceNode.velocity /= gridFaceNode.mass;
             gridFaceNode.thermalConductivity /= gridFaceNode.mass;
         } else {
-            gridFaceNode.velocity(tick) = {};
+            gridFaceNode.velocity = {};
             gridFaceNode.thermalConductivity = 0;
         }
 
@@ -239,10 +284,10 @@ void LavaSolver::update() {
         auto &gridFaceNode = gridFaceYNodes[i];
 
         if (gridFaceNode.mass > 0) {
-            gridFaceNode.velocity(tick) /= gridFaceNode.mass;
+            gridFaceNode.velocity /= gridFaceNode.mass;
             gridFaceNode.thermalConductivity /= gridFaceNode.mass;
         } else {
-            gridFaceNode.velocity(tick) = {};
+            gridFaceNode.velocity = {};
             gridFaceNode.thermalConductivity = 0;
         }
 
@@ -252,14 +297,41 @@ void LavaSolver::update() {
         auto &gridFaceNode = gridFaceZNodes[i];
 
         if (gridFaceNode.mass > 0) {
-            gridFaceNode.velocity(tick) /= gridFaceNode.mass;
+            gridFaceNode.velocity /= gridFaceNode.mass;
             gridFaceNode.thermalConductivity /= gridFaceNode.mass;
         } else {
-            gridFaceNode.velocity(tick) = {};
+            gridFaceNode.velocity = {};
             gridFaceNode.thermalConductivity = 0;
         }
 
         gridFaceNode.colliding = isNodeColliding(gridFaceNode);
+    }
+
+    // Compute particle volumes and densities
+
+    if (tick == 0) {
+
+        for (auto p = 0; p < numParticleNodes; p++) {
+            auto &particleNode = particleNodes[p];
+            auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+
+            // Nearby weighted grid nodes
+            double particleNodeDensity0 = 0;
+            for (unsigned int i = 0; i < 64; i++) {
+                auto gx = gmin.x + i / 16;
+                auto gy = gmin.y + (i / 4) % 4;
+                auto gz = gmin.z + i % 4;
+                if (!isValidGridCellNode(gx, gy, gz)) continue;
+                auto &cellNode = this->gridCellNode(gx, gy, gz);
+
+                particleNodeDensity0 += cellNode.mass / (h * h * h) * particleNode.cell_weight[i];
+
+            }
+
+            particleNode.volume0 = particleNode.mass / particleNodeDensity0;
+
+        }
+
     }
 
     // 4. Classify cells ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -316,16 +388,170 @@ void LavaSolver::update() {
 
     LOG(INFO) << "numCellNodesColliding=" << numGellNodesColliding << std::endl;
 
-    // 8. Solve heat equation //////////////////////////////////////////////////////////////////////////////////////////
+    // 5. MPM velocity update //////////////////////////////////////////////////////////////////////////////////////////
 
-    std::vector<double> next_temperature(numGridCellNodes);
-    std::vector<double> temperature(numGridCellNodes);
+    // TODO: Follow actual equation (23) for velocity explicit update
+
+    // Clear face nodes
+    for (auto i = 0; i < numGridFaceXNodes; i++) {
+        auto &faceNode = gridFaceXNodes[i];
+
+        faceNode.force = 0;
+    }
+    for (auto i = 0; i < numGridFaceYNodes; i++) {
+        auto &faceNode = gridFaceYNodes[i];
+
+        faceNode.force = 0;
+    }
+    for (auto i = 0; i < numGridFaceZNodes; i++) {
+        auto &faceNode = gridFaceZNodes[i];
+
+        faceNode.force = -9.8 * faceNode.mass;
+    }
+
+    // Transfer particle forces to faces
+    for (auto p = 0; p < numParticleNodes; p++) {
+        auto const &particleNode = particleNodes[p];
+        auto gcmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+        auto gfxmin = glm::ivec3((particleNode.position / h) - glm::dvec3(0.5, 1, 1));
+        auto gfymin = glm::ivec3((particleNode.position / h) - glm::dvec3(1, 0.5, 1));
+        auto gfzmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1, 1, 0.5));
+
+        auto jp = glm::determinant(particleNode.deformPlastic);
+        auto je = glm::determinant(particleNode.deformElastic);
+
+        auto e = exp(particleNode.hardeningCoefficient * (1 - jp));
+        auto mu = particleNode.mu0 * e;
+        auto lambda = particleNode.lambda0 * e;
+
+        // Set mu to 0 if particle liquid
+        if (particleNode.temperature > particleNode.fusionTemperature + FLT_EPSILON) {
+            mu = 0;
+        }
+
+        // TODO: Use actual derivative
+
+        auto unweightedForce = -particleNode.volume0 *
+                               (2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
+                                glm::transpose(particleNode.deformElastic) +
+                                glm::dmat3(lambda * (je - 1) * je));
+
+        // Nearby weighted grid face nodes
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gfxmin.x + i / 16;
+            auto gy = gfxmin.y + (i / 4) % 4;
+            auto gz = gfxmin.z + i % 4;
+            if (!isValidGridFaceXNode(gx, gy, gz)) continue;
+            auto &faceNode = this->gridFaceXNode(gx, gy, gz);
+
+            faceNode.force += (unweightedForce * particleNode.face_x_nabla_weight[i]).x;
+        }
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gfymin.x + i / 16;
+            auto gy = gfymin.y + (i / 4) % 4;
+            auto gz = gfymin.z + i % 4;
+            if (!isValidGridFaceYNode(gx, gy, gz)) continue;
+            auto &faceNode = this->gridFaceYNode(gx, gy, gz);
+
+            faceNode.force += (unweightedForce * particleNode.face_y_nabla_weight[i]).y;
+        }
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gfzmin.x + i / 16;
+            auto gy = gfzmin.y + (i / 4) % 4;
+            auto gz = gfzmin.z + i % 4;
+            if (!isValidGridFaceZNode(gx, gy, gz)) continue;
+            auto &faceNode = this->gridFaceZNode(gx, gy, gz);
+
+            faceNode.force += (unweightedForce * particleNode.face_z_nabla_weight[i]).z;
+        }
+
+    }
+
+    for (auto i = 0; i < numGridFaceXNodes; i++) {
+        auto &faceNode = gridFaceXNodes[i];
+
+        if (faceNode.force != 0 && faceNode.mass > 0) {
+            faceNode.velocity_star = glm::dvec3(faceNode.velocity + delta_t * faceNode.force / faceNode.mass, 0, 0);
+        } else {
+            faceNode.velocity_star = {};
+        }
+    }
+    for (auto i = 0; i < numGridFaceYNodes; i++) {
+        auto &faceNode = gridFaceYNodes[i];
+
+        if (faceNode.force != 0 && faceNode.mass > 0) {
+            faceNode.velocity_star = glm::dvec3(0, faceNode.velocity + delta_t * faceNode.force / faceNode.mass, 0);
+        } else {
+            faceNode.velocity_star = {};
+        }
+    }
+    for (auto i = 0; i < numGridFaceZNodes; i++) {
+        auto &faceNode = gridFaceZNodes[i];
+
+        if (faceNode.force != 0 && faceNode.mass > 0) {
+            faceNode.velocity_star = glm::dvec3(0, 0, faceNode.velocity + delta_t * faceNode.force / faceNode.mass);
+        } else {
+            faceNode.velocity_star = {};
+        }
+    }
+
+    // 6. Process grid collisions //////////////////////////////////////////////////////////////////////////////////////
+
+    if (handleNodeCollisionVelocityUpdate) {
+
+        for (auto i = 0; i < numGridFaceXNodes; i++) {
+            auto &faceNode = gridFaceXNodes[i];
+
+            handleNodeCollisionVelocityUpdate(faceNode);
+            faceNode.velocity_star = glm::dvec3(faceNode.velocity_star.x, 0, 0);
+        }
+        for (auto i = 0; i < numGridFaceYNodes; i++) {
+            auto &faceNode = gridFaceYNodes[i];
+
+            handleNodeCollisionVelocityUpdate(faceNode);
+            faceNode.velocity_star = glm::dvec3(0, faceNode.velocity_star.y, 0);
+        }
+        for (auto i = 0; i < numGridFaceZNodes; i++) {
+            auto &faceNode = gridFaceZNodes[i];
+
+            handleNodeCollisionVelocityUpdate(faceNode);
+            faceNode.velocity_star = glm::dvec3(0, 0, faceNode.velocity_star.z);
+        }
+
+    }
+
+    // 7. Project velocities ///////////////////////////////////////////////////////////////////////////////////////////
+
+    std::vector<double> next_quantity(numGridCellNodes);
+    std::vector<double> quantity(numGridCellNodes);
+
+    // TODO: Take care of the incompressible part
+
+//    for (auto c = 0; c < numGridCellNodes; c++) {
+//        auto &cellNode = gridCellNodes[c];
+//
+//        quantity[c] = cellNode.;
+//        next_quantity[c] = cellNode.temperature;
+//
+//    }
+//
+//    conjugateResidualSolver(this, &LavaSolver::implicitHeatIntegrationMatrix,
+//                            next_quantity, quantity, 50);
+//
+//    for (auto c = 0; c < numGridCellNodes; c++) {
+//        auto &cellNode = gridCellNodes[c];
+//
+//        cellNode.temperature_next = next_quantity[c];
+//
+//    }
+
+    // 8. Solve heat equation //////////////////////////////////////////////////////////////////////////////////////////
 
     for (auto c = 0; c < numGridCellNodes; c++) {
         auto &cellNode = gridCellNodes[c];
 
-        temperature[c] = cellNode.temperature;
-        next_temperature[c] = cellNode.temperature;
+        quantity[c] = cellNode.temperature;
+        next_quantity[c] = cellNode.temperature;
 
     }
 
@@ -335,11 +561,157 @@ void LavaSolver::update() {
     for (auto c = 0; c < numGridCellNodes; c++) {
         auto &cellNode = gridCellNodes[c];
 
-        cellNode.temperature_next = next_temperature[c];
+        cellNode.temperature_next = next_quantity[c];
 
     }
 
     // 9. Update particle state from grid //////////////////////////////////////////////////////////////////////////////
+
+    // Velocity
+
+    for (auto p = 0; p < numParticleNodes; p++) {
+        auto &particleNode = particleNodes[p];
+        auto gcmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+        auto gfxmin = glm::ivec3((particleNode.position / h) - glm::dvec3(0.5, 1, 1));
+        auto gfymin = glm::ivec3((particleNode.position / h) - glm::dvec3(1, 0.5, 1));
+        auto gfzmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1, 1, 0.5));
+
+        auto v_pic = glm::dvec3();
+        auto v_flip = particleNode.velocity(tick);
+
+        // Nearby weighted grid face nodes
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gfxmin.x + i / 16;
+            auto gy = gfxmin.y + (i / 4) % 4;
+            auto gz = gfxmin.z + i % 4;
+            if (!isValidGridFaceXNode(gx, gy, gz)) continue;
+            auto &faceNode = this->gridFaceXNode(gx, gy, gz);
+
+            auto w = particleNode.face_x_weight[i];
+            auto gv = faceNode.velocity;
+            auto gv1 = faceNode.velocity_star.x;
+
+            v_pic.x += gv1 * w;
+            v_flip.x += (gv1 - gv) * w;
+
+        }
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gfymin.x + i / 16;
+            auto gy = gfymin.y + (i / 4) % 4;
+            auto gz = gfymin.z + i % 4;
+            if (!isValidGridFaceYNode(gx, gy, gz)) continue;
+            auto &faceNode = this->gridFaceYNode(gx, gy, gz);
+
+            auto w = particleNode.face_y_weight[i];
+            auto gv = faceNode.velocity;
+            auto gv1 = faceNode.velocity_star.y;
+
+            v_pic.y += gv1 * w;
+            v_flip.y += (gv1 - gv) * w;
+
+        }
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gfzmin.x + i / 16;
+            auto gy = gfzmin.y + (i / 4) % 4;
+            auto gz = gfzmin.z + i % 4;
+            if (!isValidGridFaceZNode(gx, gy, gz)) continue;
+            auto &faceNode = this->gridFaceZNode(gx, gy, gz);
+
+            auto w = particleNode.face_z_weight[i];
+            auto gv = faceNode.velocity;
+            auto gv1 = faceNode.velocity_star.z;
+
+            v_pic.z += gv1 * w;
+            v_flip.z += (gv1 - gv) * w;
+
+        }
+
+        particleNode.velocity_star = (1 - alpha) * v_pic + alpha * v_flip;
+
+        // 10
+
+        if (handleNodeCollisionVelocityUpdate)
+            handleNodeCollisionVelocityUpdate(particleNode);
+
+        particleNode.velocity(tick + 1) = particleNode.velocity_star;
+
+        particleNode.position += delta_t * particleNode.velocity(tick + 1);
+
+    }
+
+    // Deformation gradient
+
+    for (auto p = 0; p < numParticleNodes; p++) {
+        auto &particleNode = particleNodes[p];
+        auto gcmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+        auto gfxmin = glm::ivec3((particleNode.position / h) - glm::dvec3(0.5, 1, 1));
+        auto gfymin = glm::ivec3((particleNode.position / h) - glm::dvec3(1, 0.5, 1));
+        auto gfzmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1, 1, 0.5));
+
+        glm::dmat3 nabla_v{};
+
+        // Nearby weighted grid face nodes
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gfxmin.x + i / 16;
+            auto gy = gfxmin.y + (i / 4) % 4;
+            auto gz = gfxmin.z + i % 4;
+            if (!isValidGridFaceXNode(gx, gy, gz)) continue;
+            auto &faceNode = this->gridFaceXNode(gx, gy, gz);
+
+            nabla_v += glm::outerProduct(glm::dvec3(faceNode.velocity_star.x, 0, 0),
+                                         particleNode.face_x_nabla_weight[i]);
+
+        }
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gfymin.x + i / 16;
+            auto gy = gfymin.y + (i / 4) % 4;
+            auto gz = gfymin.z + i % 4;
+            if (!isValidGridFaceYNode(gx, gy, gz)) continue;
+            auto &faceNode = this->gridFaceYNode(gx, gy, gz);
+
+            nabla_v += glm::outerProduct(glm::dvec3(0, faceNode.velocity_star.y, 0),
+                                         particleNode.face_y_nabla_weight[i]);
+
+        }
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gfzmin.x + i / 16;
+            auto gy = gfzmin.y + (i / 4) % 4;
+            auto gz = gfzmin.z + i % 4;
+            if (!isValidGridFaceZNode(gx, gy, gz)) continue;
+            auto &faceNode = this->gridFaceZNode(gx, gy, gz);
+
+            nabla_v += glm::outerProduct(glm::dvec3(0, 0, faceNode.velocity_star.z),
+                                         particleNode.face_z_nabla_weight[i]);
+
+        }
+
+        // TODO: Use proper multiplier
+        // auto multiplier = deformationUpdateR(delta_t * nabla_v);
+        auto multiplier = glm::dmat3(1) + delta_t * nabla_v;
+
+        glm::dmat3 deform = particleNode.deformElastic * particleNode.deformPlastic;
+        glm::dmat3 deform_prime = multiplier * deform;
+        auto deformElastic_prime = multiplier * particleNode.deformElastic;
+
+        glm::dmat3 u;
+        glm::dvec3 e;
+        glm::dmat3 v;
+        svd(deformElastic_prime, u, e, v);
+        e = glm::clamp(e, 1 - particleNode.criticalCompression, 1 + particleNode.criticalStretch);
+
+        particleNode.deformElastic = u * glm::dmat3(e.x, 0, 0, 0, e.y, 0, 0, 0, e.z) * glm::transpose(v);
+        particleNode.deformPlastic =
+                v * glm::dmat3(1 / e.x, 0, 0, 0, 1 / e.y, 0, 0, 0, 1 / e.z) * glm::transpose(u) * deform_prime;
+
+        // Remove deviatoric component if liquid
+        if (particleNode.temperature > particleNode.fusionTemperature + FLT_EPSILON) {
+            particleNode.deformElastic = pow(glm::determinant(particleNode.deformElastic), 1.0 / 3.0) *
+                                         glm::dmat3(1);
+        }
+
+    }
+
+    // Temperature
 
     for (auto p = 0; p < numParticleNodes; p++) {
         auto &particleNode = particleNodes[p];

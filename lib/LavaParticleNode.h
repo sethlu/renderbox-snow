@@ -14,19 +14,19 @@ public:
     LavaParticleNode(glm::dvec3 const &position, double mass) : Node(position) {
         this->mass = mass;
 
-        // Butter
+        // Water
 
-        criticalCompression = 2.5e-2; // ??
-        criticalStretch = 7.5e-3; // ??
-        hardeningCoefficient = 10; // ??
-        youngsModulus0 = 1.4e6;
-        poissonsRatio = 0.2; // ??
+        criticalCompression = 2.5e-2;
+        criticalStretch = 7.5e-3;
+        hardeningCoefficient = 10;
+        youngsModulus0 = 1.4e5;
+        poissonsRatio = 0.2;
 
-        temperature = 20;
-        thermalConductivity = 0.2;
-        specificHeat = 2.4e3;
-        fusionTemperature = 35;
-        latentHeatOfFusion = 60e3;
+        temperature = -1;
+        thermalConductivity = 0.606;
+        specificHeat = 4.184e3;
+        fusionTemperature = 0;
+        latentHeatOfFusion = 334e3;
 
         // Init
 

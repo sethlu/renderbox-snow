@@ -20,7 +20,7 @@ SnowSolver::SnowSolver(std::string const &filename) {
     loadState(filename);
 }
 
-void svd(glm::dmat3 const &m, glm::dmat3 &u, glm::dvec3 &e, glm::dmat3 &v) {
+inline void svd(glm::dmat3 const &m, glm::dmat3 &u, glm::dvec3 &e, glm::dmat3 &v) {
     Eigen::Map<eigen_matrix3 const> mmap(glm::value_ptr(m));
     Eigen::Map<eigen_matrix3> umap(glm::value_ptr(u));
     Eigen::Map<eigen_vector3> emap(glm::value_ptr(e));
@@ -33,7 +33,7 @@ void svd(glm::dmat3 const &m, glm::dmat3 &u, glm::dvec3 &e, glm::dmat3 &v) {
     vmap = svd.matrixV();
 }
 
-glm::dmat3 polarRot(glm::dmat3 const &m) {
+inline glm::dmat3 polarRot(glm::dmat3 const &m) {
     glm::dmat3 u;
     glm::dvec3 e;
     glm::dmat3 v;
@@ -41,7 +41,7 @@ glm::dmat3 polarRot(glm::dmat3 const &m) {
     return u * glm::transpose(v);
 }
 
-void polarDecompose(glm::dmat3 const &m, glm::dmat3 &r, glm::dmat3 &s) {
+inline void polarDecompose(glm::dmat3 const &m, glm::dmat3 &r, glm::dmat3 &s) {
     glm::dmat3 u;
     glm::dvec3 e;
     glm::dmat3 v;
@@ -290,8 +290,6 @@ void SnowSolver::update() {
 
         // 7
 
-        glm::dmat3 deform = particleNode.deformElastic * particleNode.deformPlastic;
-
         glm::dmat3 nabla_v{};
 
         // Nearby weighted grid nodes
@@ -308,6 +306,7 @@ void SnowSolver::update() {
 
         glm::dmat3 multiplier = glm::dmat3(1) + delta_t * nabla_v;
 
+        glm::dmat3 deform = particleNode.deformElastic * particleNode.deformPlastic;
         glm::dmat3 deform_prime = multiplier * deform;
         glm::dmat3 deformElastic_prime = multiplier * particleNode.deformElastic;
 

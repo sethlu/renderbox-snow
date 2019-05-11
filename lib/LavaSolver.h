@@ -23,6 +23,8 @@ public:
 
     bool (*isNodeColliding)(Node &node);
 
+    void (*handleNodeCollisionVelocityUpdate)(Node &node);
+
     unsigned int getTick() {
         return tick;
     }
@@ -217,6 +219,8 @@ private:
     // Helper methods
 
     void implicitHeatIntegrationMatrix(std::vector<double> &Ax, std::vector<double> const &x);
+
+    void implicitPressureIntegrationMatrix(std::vector<double> &Ax, std::vector<double> const &x);
 
     double n(glm::dvec3 const &gridPosition, glm::dvec3 const &particlePosition) {
         return n(invh * (particlePosition.x - gridPosition.x)) *

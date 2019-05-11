@@ -16,7 +16,8 @@ public:
 protected:
 
     glm::uvec3 location;
-    glm::dvec3 force;
+    double force;
+    double velocity;
     double thermalConductivity;
 
     bool colliding;

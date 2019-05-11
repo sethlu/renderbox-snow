@@ -36,12 +36,12 @@ void launchDemoButterball(int argc, char const **argv) {
     auto simulationSize = glm::dvec3(1);
 
     solver.reset(new LavaSolver(gridSize, simulationSize * (1 / gridSize)));
-    solver->delta_t = 5e-2;
+    solver->delta_t = 5e-4;
 
     solver->isNodeColliding = isNodeColliding;
+    solver->handleNodeCollisionVelocityUpdate = handleNodeCollisionVelocityUpdate;
 
-    genSnowSphere(glm::dvec3(0.5, 0.5, 0.18), 0.1, density, particleSize);
-    genSnowSphere(glm::dvec3(0.625, 0.5, 0.18), 0.05, density, particleSize);
+    genSnowSphere(glm::dvec3(0.5, 0.5, 0.28), 0.08, density, particleSize);
 
     // Rendering
 
