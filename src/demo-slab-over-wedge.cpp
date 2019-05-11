@@ -34,6 +34,7 @@ void launchDemoSlabOverWedge(int argc, char const **argv) {
     auto simulationSize = glm::dvec3(1);
 
     solver.reset(new SnowSolver(gridSize, simulationSize * (1 / gridSize)));
+    solver->delta_t = 5e-4;
 
     genSnowSlab(glm::dvec3(0.2, 0.45, 0.7), glm::dvec3(0.8, 0.55, 0.9), density, particleSize);
 
