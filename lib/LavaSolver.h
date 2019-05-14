@@ -156,6 +156,28 @@ public:
         return 0;
     }
 
+    static double tight_n(double x) {
+        auto absx = std::abs(x);
+        if (absx < 0.5) {
+            auto x2 = x * x;
+            return -0.5 * x2 + 3.0 / 4.0;
+        } else if (absx < 1.5) {
+            auto x2 = x * x;
+            return 0.5 * x2 - 3.0 / 2.0 * x * (x < 0 ? -1 : 1) + 9.0 / 8.0;
+        }
+        return 0;
+    }
+
+    static double tight_del_n(double x) {
+        auto absx = std::abs(x);
+        if (absx < 0.5) {
+            return -2 * x;
+        } else if (absx < 1.5) {
+            return x - 3.0 / 2.0 * (x < 0 ? -1 : 1);
+        }
+        return 0;
+    }
+
     static void applyTemperatureDifference(LavaParticleNode &node, double temperatureDifference) {
         // Latent heat of fusion for phase change
         double latentEnergyOfFusion = node.mass * node.latentHeatOfFusion; // [J]
@@ -265,6 +287,12 @@ private:
                n(invh * (particlePosition.z - gridPosition.z));
     }
 
+    double tight_n(glm::dvec3 const &gridPosition, glm::dvec3 const &particlePosition) {
+        return tight_n(invh * (particlePosition.x - gridPosition.x)) *
+               tight_n(invh * (particlePosition.y - gridPosition.y)) *
+               tight_n(invh * (particlePosition.z - gridPosition.z));
+    }
+
     double n(unsigned i, glm::dvec3 const &particlePosition) {
         auto const &gpos = gridCellNodes[i].position;
         return n(gpos, particlePosition);
@@ -286,6 +314,17 @@ private:
         return invh * glm::dvec3(dnx * ny * nz, nx * dny * nz, nx * ny * dnz);
     }
 
+    glm::dvec3 tight_nabla_n(glm::dvec3 const &gridPosition, glm::dvec3 const &particlePosition) {
+        auto nx = tight_n(invh * (particlePosition.x - gridPosition.x));
+        auto ny = tight_n(invh * (particlePosition.y - gridPosition.y));
+        auto nz = tight_n(invh * (particlePosition.z - gridPosition.z));
+        auto dnx = tight_del_n(invh * (particlePosition.x - gridPosition.x));
+        auto dny = tight_del_n(invh * (particlePosition.y - gridPosition.y));
+        auto dnz = tight_del_n(invh * (particlePosition.z - gridPosition.z));
+
+        return invh * glm::dvec3(dnx * ny * nz, nx * dny * nz, nx * ny * dnz);
+    }
+
     double weight(LavaGridCellNode const &i, LavaParticleNode const &p) {
         return n(i.position, p.position);
     }
@@ -294,12 +333,20 @@ private:
         return n(i.position, p.position);
     }
 
+    double tight_weight(LavaGridCellNode const &i, LavaParticleNode const &p) {
+        return tight_n(i.position, p.position);
+    }
+
     glm::dvec3 nabla_weight(LavaGridCellNode const &i, LavaParticleNode const &p) {
         return nabla_n(i.position, p.position);
     }
 
     glm::dvec3 nabla_weight(LavaGridFaceNode const &i, LavaParticleNode const &p) {
         return nabla_n(i.position, p.position);
+    }
+
+    glm::dvec3 tight_nabla_weight(LavaGridFaceNode const &i, LavaParticleNode const &p) {
+        return tight_nabla_n(i.position, p.position);
     }
 
 };

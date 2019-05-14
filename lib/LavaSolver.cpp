@@ -106,6 +106,12 @@ void LavaSolver::propagateSimulationParametersUpdate() {
     LOG(INFO) << "#gridFaceZNodes=" << gridFaceZNodes.size() << std::endl;
 }
 
+inline double ddot(glm::dmat3 a, glm::dmat3 b) {
+    return a[0][0] * b[0][0] + a[0][1] * b[0][1] + a[0][2] * b[0][2] +
+           a[1][0] * b[1][0] + a[1][1] * b[1][1] + a[1][2] * b[1][2] +
+           a[2][0] * b[2][0] + a[2][1] * b[2][1] + a[2][2] * b[2][2];
+}
+
 void LavaSolver::update() {
     LOG(INFO) << "delta_t=" << delta_t << " tick=" << tick << std::endl;
 
@@ -126,7 +132,6 @@ void LavaSolver::update() {
         auto &cellNode = gridCellNodes[i];
 
         cellNode.mass = 0;
-        cellNode.velocity = {};
         cellNode.j = 0;
         cellNode.je = 0;
         cellNode.specificHeat = 0;
@@ -141,6 +146,7 @@ void LavaSolver::update() {
         faceNode.mass = 0;
         faceNode.velocity = {};
         faceNode.thermalConductivity = 0;
+        faceNode.inv_density = 0;
     }
     for (auto i = 0; i < numGridFaceYNodes; i++) {
         auto &faceNode = gridFaceYNodes[i];
@@ -148,6 +154,7 @@ void LavaSolver::update() {
         faceNode.mass = 0;
         faceNode.velocity = {};
         faceNode.thermalConductivity = 0;
+        faceNode.inv_density = 0;
     }
     for (auto i = 0; i < numGridFaceZNodes; i++) {
         auto &faceNode = gridFaceZNodes[i];
@@ -155,6 +162,7 @@ void LavaSolver::update() {
         faceNode.mass = 0;
         faceNode.velocity = {};
         faceNode.thermalConductivity = 0;
+        faceNode.inv_density = 0;
     }
 
     for (auto p = 0; p < numParticleNodes; p++) {
@@ -188,7 +196,6 @@ void LavaSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.cell_weight[i];
 
             cellNode.mass += particleWeightedMass;
-            cellNode.velocity += particleNode.velocity * particleWeightedMass;
             cellNode.j += j * particleWeightedMass;
             cellNode.je += je * particleWeightedMass;
             cellNode.specificHeat += particleNode.specificHeat * particleWeightedMass;
@@ -211,7 +218,7 @@ void LavaSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.face_x_weight[i];
 
             faceNode.mass += particleWeightedMass;
-            faceNode.velocity += particleNode.velocity * particleWeightedMass;
+            faceNode.velocity.x += particleNode.velocity.x * particleWeightedMass;
             faceNode.thermalConductivity += particleNode.thermalConductivity * particleWeightedMass;
         }
         for (unsigned int i = 0; i < 64; i++) {
@@ -228,7 +235,7 @@ void LavaSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.face_y_weight[i];
 
             faceNode.mass += particleWeightedMass;
-            faceNode.velocity += particleNode.velocity * particleWeightedMass;
+            faceNode.velocity.y += particleNode.velocity.y * particleWeightedMass;
             faceNode.thermalConductivity += particleNode.thermalConductivity * particleWeightedMass;
         }
         for (unsigned int i = 0; i < 64; i++) {
@@ -245,7 +252,7 @@ void LavaSolver::update() {
             auto particleWeightedMass = particleNode.mass * particleNode.face_z_weight[i];
 
             faceNode.mass += particleWeightedMass;
-            faceNode.velocity += particleNode.velocity * particleWeightedMass;
+            faceNode.velocity.z += particleNode.velocity.z * particleWeightedMass;
             faceNode.thermalConductivity += particleNode.thermalConductivity * particleWeightedMass;
         }
 
@@ -255,7 +262,6 @@ void LavaSolver::update() {
         auto &cellNode = gridCellNodes[i];
 
         if (cellNode.mass > 0) {
-            cellNode.velocity /= cellNode.mass;
             cellNode.j /= cellNode.mass;
             cellNode.je /= cellNode.mass;
             cellNode.jp = cellNode.j / cellNode.je;
@@ -263,7 +269,6 @@ void LavaSolver::update() {
             cellNode.temperature /= cellNode.mass;
             cellNode.inv_lambda /= cellNode.mass;
         } else {
-            cellNode.velocity = {};
             cellNode.j = 0;
             cellNode.je = 0;
             cellNode.jp = 0;
@@ -435,12 +440,24 @@ void LavaSolver::update() {
             mu = 0;
         }
 
-        // TODO: Use actual derivative
+        auto AFt = 2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
+                   glm::transpose(particleNode.deformElastic) +
+                   glm::dmat3(lambda * (je - 1) * je);
+        auto unweightedForce = -particleNode.volume0 * AFt;
 
-        auto unweightedForce = -particleNode.volume0 *
-                               (2 * mu * (particleNode.deformElastic - polarRot(particleNode.deformElastic)) *
-                                glm::transpose(particleNode.deformElastic) +
-                                glm::dmat3(lambda * (je - 1) * je));
+        // FIXME: Use correct derivative, the implementation below (following the paper) turned everything liquid-y
+
+//        auto a = -1.0 / 3.0;
+//        auto ja = pow(je, a);
+//        auto jaF = ja * particleNode.deformElastic; // J_{E_p}^{-1/d} * F_{E_p}
+//        auto jjaF = glm::determinant(jaF);
+//        auto A = 2 * mu * (jaF - polarRot(jaF)) +
+//                 lambda * (jjaF - 1) * jjaF * glm::transpose(glm::inverse(jaF));
+//        auto AhatFt = ja * (A * glm::transpose(particleNode.deformElastic) +
+//                           glm::dmat3(a * ddot(particleNode.deformElastic, A)));
+//        auto unweightedForce = -particleNode.volume0 * AhatFt;
+
+//        std::cout << AFt << " " << AhatFt << std::endl;
 
         // Nearby weighted grid face nodes
         for (unsigned int i = 0; i < 64; i++) {
@@ -528,25 +545,180 @@ void LavaSolver::update() {
     std::vector<double> next_quantity(numGridCellNodes);
     std::vector<double> quantity(numGridCellNodes);
 
-    // TODO: Take care of the incompressible part
+    // Wish to solve for p_c
 
-//    for (auto c = 0; c < numGridCellNodes; c++) {
-//        auto &cellNode = gridCellNodes[c];
-//
-//        quantity[c] = cellNode.;
-//        next_quantity[c] = cellNode.temperature;
-//
-//    }
-//
-//    conjugateResidualSolver(this, &LavaSolver::implicitHeatIntegrationMatrix,
-//                            next_quantity, quantity, 50);
-//
-//    for (auto c = 0; c < numGridCellNodes; c++) {
-//        auto &cellNode = gridCellNodes[c];
-//
-//        cellNode.temperature_next = next_quantity[c];
-//
-//    }
+    for (auto p = 0; p < numParticleNodes; p++) {
+        auto &particleNode = particleNodes[p];
+        auto gmin = glm::ivec3((particleNode.position / h) - glm::dvec3(1));
+
+        // Accumulate control volume
+
+        // Nearby weighted grid nodes
+        double particleNodeDensity0 = 0;
+        for (unsigned int i = 0; i < 64; i++) {
+            auto gx = gmin.x + i / 16;
+            auto gy = gmin.y + (i / 4) % 4;
+            auto gz = gmin.z + i % 4;
+            if (!isValidGridCellNode(gx, gy, gz)) continue;
+            auto &cellNode = this->gridCellNode(gx, gy, gz);
+
+            if (cellNode.type != INTERIOR) continue;
+
+            {
+                auto &faceNode = gridFaceXNode(cellNode.location.x, cellNode.location.y, cellNode.location.z);
+                faceNode.inv_density += weight(faceNode, particleNode);
+            }
+            {
+                auto &faceNode = gridFaceYNode(cellNode.location.x, cellNode.location.y, cellNode.location.z);
+                faceNode.inv_density += weight(faceNode, particleNode);
+            }
+            {
+                auto &faceNode = gridFaceZNode(cellNode.location.x, cellNode.location.y, cellNode.location.z);
+                faceNode.inv_density += weight(faceNode, particleNode);
+            }
+
+        }
+
+    }
+
+    // Density
+
+    for (auto i = 0; i < numGridFaceXNodes; i++) {
+        auto &faceNode = gridFaceXNodes[i];
+
+        if (faceNode.mass > 0) {
+            faceNode.inv_density *= pow(h, 3) / faceNode.mass;
+        } else {
+            faceNode.inv_density = 0;
+        }
+    }
+    for (auto i = 0; i < numGridFaceYNodes; i++) {
+        auto &faceNode = gridFaceYNodes[i];
+
+        if (faceNode.mass > 0) {
+            faceNode.inv_density *= pow(h, 3) / faceNode.mass;
+        } else {
+            faceNode.inv_density = 0;
+        }
+    }
+    for (auto i = 0; i < numGridFaceZNodes; i++) {
+        auto &faceNode = gridFaceZNodes[i];
+
+        if (faceNode.mass > 0) {
+            faceNode.inv_density *= pow(h, 3) / faceNode.mass;
+        } else {
+            faceNode.inv_density = 0;
+        }
+    }
+
+    for (auto c = 0; c < numGridCellNodes; c++) {
+        auto &cellNode = gridCellNodes[c];
+
+        // Skip no mass node
+        if (cellNode.type != INTERIOR || cellNode.mass == 0) {
+            quantity[c] = 0;
+            next_quantity[c] = 0;
+            continue;
+        }
+
+        // Compute s_c
+
+        auto s_c = -(cellNode.je - 1) / (delta_t * cellNode.je) -
+                   (gridFaceXNode(cellNode.location.x + 1, cellNode.location.y, cellNode.location.z).velocity_star.x -
+                    gridFaceXNode(cellNode.location.x, cellNode.location.y, cellNode.location.z).velocity_star.x +
+                    gridFaceYNode(cellNode.location.x, cellNode.location.y + 1, cellNode.location.z).velocity_star.y -
+                    gridFaceYNode(cellNode.location.x, cellNode.location.y, cellNode.location.z).velocity_star.y +
+                    gridFaceZNode(cellNode.location.x, cellNode.location.y, cellNode.location.z + 1).velocity_star.z -
+                    gridFaceZNode(cellNode.location.x, cellNode.location.y, cellNode.location.z).velocity_star.z);
+
+        quantity[c] = s_c;
+        next_quantity[c] = -1.0 / cellNode.jp / cellNode.inv_lambda * (cellNode.je - 1);
+//        next_quantity[c] = 0;
+
+    }
+
+    conjugateResidualSolver(this, &LavaSolver::implicitPressureIntegrationMatrix,
+                            next_quantity, quantity, 300);
+
+    double cellNodeValues[2] = {0, 0};
+    for (auto i = 0; i < numGridFaceXNodes; i++) {
+        auto &faceNode = gridFaceXNodes[i];
+
+        // Skip faces that don't require pressure correction
+        if (faceNode.location.x == size.x ||
+            gridCellNode(faceNode.location.x, faceNode.location.y, faceNode.location.z).type != INTERIOR)
+            continue;
+
+        // x-min boundary
+        if (faceNode.location.x == 0) {
+            cellNodeValues[0] = 0;
+        } else {
+            cellNodeValues[0] = next_quantity[getGridCellNodeIndex(faceNode.location.x - 1, faceNode.location.y,
+                                                                   faceNode.location.z)];
+        }
+
+        // x-max boundary
+        if (faceNode.location.x == size.x) {
+            cellNodeValues[1] = 0;
+        } else {
+            cellNodeValues[1] = next_quantity[getGridCellNodeIndex(faceNode.location.x, faceNode.location.y,
+                                                                   faceNode.location.z)];
+        }
+
+        faceNode.velocity_star.x -= delta_t * (cellNodeValues[1] - cellNodeValues[0]) * faceNode.inv_density;
+    }
+    for (auto i = 0; i < numGridFaceYNodes; i++) {
+        auto &faceNode = gridFaceYNodes[i];
+
+        // Skip faces that don't require pressure correction
+        if (faceNode.location.y == size.y ||
+            gridCellNode(faceNode.location.x, faceNode.location.y, faceNode.location.z).type != INTERIOR)
+            continue;
+
+        // y-min boundary
+        if (faceNode.location.y == 0) {
+            cellNodeValues[0] = 0;
+        } else {
+            cellNodeValues[0] = next_quantity[getGridCellNodeIndex(faceNode.location.x, faceNode.location.y - 1,
+                                                                   faceNode.location.z)];
+        }
+
+        // y-max boundary
+        if (faceNode.location.y == size.y) {
+            cellNodeValues[1] = 0;
+        } else {
+            cellNodeValues[1] = next_quantity[getGridCellNodeIndex(faceNode.location.x, faceNode.location.y,
+                                                                   faceNode.location.z)];
+        }
+
+        faceNode.velocity_star.y -= delta_t * (cellNodeValues[1] - cellNodeValues[0]) * faceNode.inv_density;
+    }
+    for (auto i = 0; i < numGridFaceZNodes; i++) {
+        auto &faceNode = gridFaceZNodes[i];
+
+        // Skip faces that don't require pressure correction
+        if (faceNode.location.z == size.z ||
+            gridCellNode(faceNode.location.x, faceNode.location.y, faceNode.location.z).type != INTERIOR)
+            continue;
+
+        // z-min boundary
+        if (faceNode.location.z == 0) {
+            cellNodeValues[0] = 0;
+        } else {
+            cellNodeValues[0] = next_quantity[getGridCellNodeIndex(faceNode.location.x, faceNode.location.y,
+                                                                   faceNode.location.z - 1)];
+        }
+
+        // z-max boundary
+        if (faceNode.location.z == size.z) {
+            cellNodeValues[1] = 0;
+        } else {
+            cellNodeValues[1] = next_quantity[getGridCellNodeIndex(faceNode.location.x, faceNode.location.y,
+                                                                   faceNode.location.z)];
+        }
+
+        faceNode.velocity_star.z -= delta_t * (cellNodeValues[1] - cellNodeValues[0]) * faceNode.inv_density;
+    }
 
     // 8. Solve heat equation //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -662,7 +834,7 @@ void LavaSolver::update() {
             auto &faceNode = this->gridFaceXNode(gx, gy, gz);
 
             nabla_v += glm::outerProduct(glm::dvec3(faceNode.velocity_star.x, 0, 0),
-                                         particleNode.face_x_nabla_weight[i]);
+                                         tight_nabla_weight(faceNode, particleNode));
 
         }
         for (unsigned int i = 0; i < 64; i++) {
@@ -673,7 +845,7 @@ void LavaSolver::update() {
             auto &faceNode = this->gridFaceYNode(gx, gy, gz);
 
             nabla_v += glm::outerProduct(glm::dvec3(0, faceNode.velocity_star.y, 0),
-                                         particleNode.face_y_nabla_weight[i]);
+                                         tight_nabla_weight(faceNode, particleNode));
 
         }
         for (unsigned int i = 0; i < 64; i++) {
@@ -684,17 +856,20 @@ void LavaSolver::update() {
             auto &faceNode = this->gridFaceZNode(gx, gy, gz);
 
             nabla_v += glm::outerProduct(glm::dvec3(0, 0, faceNode.velocity_star.z),
-                                         particleNode.face_z_nabla_weight[i]);
+                                         tight_nabla_weight(faceNode, particleNode));
 
         }
 
-        // TODO: Use proper multiplier
-        // auto multiplier = deformationUpdateR(delta_t * nabla_v);
-        auto multiplier = glm::dmat3(1) + delta_t * nabla_v;
+        auto multiplier = deformationUpdateR(delta_t * nabla_v);
 
         glm::dmat3 deform = particleNode.deformElastic * particleNode.deformPlastic;
         glm::dmat3 deform_prime = multiplier * deform;
         auto deformElastic_prime = multiplier * particleNode.deformElastic;
+
+        // Remove deviatoric component if liquid
+        if (particleNode.temperature > particleNode.fusionTemperature + FLT_EPSILON) {
+            deformElastic_prime = glm::dmat3(pow(glm::determinant(deformElastic_prime), 1.0 / 3.0));
+        }
 
         glm::dmat3 u;
         glm::dvec3 e;
@@ -706,11 +881,9 @@ void LavaSolver::update() {
         particleNode.deformPlastic =
                 v * glm::dmat3(1 / e.x, 0, 0, 0, 1 / e.y, 0, 0, 0, 1 / e.z) * glm::transpose(u) * deform_prime;
 
-        // Remove deviatoric component if liquid
-        if (particleNode.temperature > particleNode.fusionTemperature + FLT_EPSILON) {
-            particleNode.deformElastic = pow(glm::determinant(particleNode.deformElastic), 1.0 / 3.0) *
-                                         glm::dmat3(1);
-        }
+        auto jp = glm::determinant(particleNode.deformPlastic);
+        particleNode.deformElastic = pow(jp, 1.0 / 3.0) * particleNode.deformElastic;
+        particleNode.deformPlastic = pow(jp, -1.0 / 3.0) * particleNode.deformPlastic;
 
     }
 
@@ -731,8 +904,6 @@ void LavaSolver::update() {
             if (!isValidGridCellNode(gx, gy, gz)) continue;
             auto &cellNode = gridCellNode(gx, gy, gz);
 
-            // FIXME: Use tighter weight function
-
             auto w = particleNode.cell_weight[i];
             auto gt = cellNode.temperature;
             auto gt1 = cellNode.temperature_next;
@@ -742,7 +913,6 @@ void LavaSolver::update() {
 
         }
 
-        auto temperature_current = particleNode.temperature;
         auto temperature_next = (1 - alpha) * temperature_pic + alpha * temperature_flip;
 
         applyTemperatureDifference(particleNode, temperature_next - particleNode.temperature);
@@ -838,6 +1008,99 @@ void LavaSolver::implicitHeatIntegrationMatrix(std::vector<double> &Ax,
                         gridFaceZNode(cellNode.location.x,
                                       cellNode.location.y,
                                       cellNode.location.z).thermalConductivity * faceNodeValues[4]);
+
+    }
+
+}
+
+void LavaSolver::implicitPressureIntegrationMatrix(std::vector<double> &Ax, std::vector<double> const &x) {
+
+    auto numGridCellNodes = gridCellNodes.size();
+
+    for (auto c = 0; c < numGridCellNodes; c++) {
+        auto const &cellNode = gridCellNodes[c];
+
+        // Continue if later calculation may cause divide-by-zero error
+        if (cellNode.type != INTERIOR || cellNode.mass == 0) {
+            Ax[c] = x[c];
+            continue;
+        }
+
+        double faceNodeValues[6] = {0, 0, 0, 0, 0, 0};
+
+        // x-min boundary
+        if (cellNode.location.x == 0) {
+            faceNodeValues[0] = 0;
+        } else {
+            faceNodeValues[0] = x[c] - x[getGridCellNodeIndex(cellNode.location.x - 1,
+                                                              cellNode.location.y,
+                                                              cellNode.location.z)];
+        }
+
+        // x-max boundary
+        if (cellNode.location.x == size.x - 1) {
+            faceNodeValues[1] = 0;
+        } else {
+            faceNodeValues[1] = x[getGridCellNodeIndex(cellNode.location.x + 1,
+                                                       cellNode.location.y,
+                                                       cellNode.location.z)] - x[c];
+        }
+
+        // y-min boundary
+        if (cellNode.location.y == 0) {
+            faceNodeValues[2] = 0;
+        } else {
+            faceNodeValues[2] = x[c] - x[getGridCellNodeIndex(cellNode.location.x,
+                                                              cellNode.location.y - 1,
+                                                              cellNode.location.z)];
+        }
+
+        // y-max boundary
+        if (cellNode.location.y == size.y - 1) {
+            faceNodeValues[3] = 0;
+        } else {
+            faceNodeValues[3] = x[getGridCellNodeIndex(cellNode.location.x,
+                                                       cellNode.location.y + 1,
+                                                       cellNode.location.z)] - x[c];
+        }
+
+        // z-min boundary
+        if (cellNode.location.z == 0) {
+            faceNodeValues[4] = 0;
+        } else {
+            faceNodeValues[4] = x[c] - x[getGridCellNodeIndex(cellNode.location.x,
+                                                              cellNode.location.y,
+                                                              cellNode.location.z - 1)];
+        }
+
+        // z-max boundary
+        if (cellNode.location.z == size.z - 1) {
+            faceNodeValues[5] = 0;
+        } else {
+            faceNodeValues[5] = x[getGridCellNodeIndex(cellNode.location.x,
+                                                       cellNode.location.y,
+                                                       cellNode.location.z + 1)] - x[c];
+        }
+
+        Ax[c] = (cellNode.jp * x[c] * cellNode.inv_lambda) / (cellNode.je * delta_t) +
+                delta_t * (gridFaceXNode(cellNode.location.x + 1,
+                                         cellNode.location.y,
+                                         cellNode.location.z).inv_density * faceNodeValues[1] -
+                           gridFaceXNode(cellNode.location.x,
+                                         cellNode.location.y,
+                                         cellNode.location.z).inv_density * faceNodeValues[0] +
+                           gridFaceYNode(cellNode.location.x,
+                                         cellNode.location.y + 1,
+                                         cellNode.location.z).inv_density * faceNodeValues[3] -
+                           gridFaceYNode(cellNode.location.x,
+                                         cellNode.location.y,
+                                         cellNode.location.z).inv_density * faceNodeValues[2] +
+                           gridFaceZNode(cellNode.location.x,
+                                         cellNode.location.y,
+                                         cellNode.location.z + 1).inv_density * faceNodeValues[5] -
+                           gridFaceZNode(cellNode.location.x,
+                                         cellNode.location.y,
+                                         cellNode.location.z).inv_density * faceNodeValues[4]);
 
     }
 

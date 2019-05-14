@@ -17,6 +17,8 @@ struct LavaGridFaceNode : public Node {
 
     bool colliding{};
 
+    double inv_density{};
+
 };
 
 

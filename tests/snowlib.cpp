@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(test_n)
 
-    BOOST_AUTO_TEST_CASE(test1) {
+    BOOST_AUTO_TEST_CASE(n) {
 
         auto n0 = SnowSolver::n(0);
         auto n0p5 = SnowSolver::n(0.5);
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_SUITE(test_n)
 
     }
 
-    BOOST_AUTO_TEST_CASE(test2) {
+    BOOST_AUTO_TEST_CASE(del_n) {
 
         auto n0 = SnowSolver::del_n(0);
         auto n0p5 = SnowSolver::del_n(0.5);
@@ -133,6 +133,54 @@ BOOST_AUTO_TEST_SUITE(test_n)
         BOOST_TEST(SnowSolver::del_n(-1.5) == -n1p5);
         BOOST_TEST(SnowSolver::del_n(-2) == -n2);
         BOOST_TEST(SnowSolver::del_n(-2.5) == -n2p5);
+
+    }
+
+    BOOST_AUTO_TEST_CASE(tight_n) {
+
+        auto n0 = LavaSolver::tight_n(0);
+        auto n0p5 = LavaSolver::tight_n(0.5);
+        auto n1 = LavaSolver::tight_n(1);
+        auto n1p5 = LavaSolver::tight_n(1.5);
+        auto n2 = LavaSolver::tight_n(2);
+        auto n2p5 = LavaSolver::tight_n(2.5);
+
+        std::cout << "n0=" << n0 << std::endl;
+        std::cout << "n0p5=" << n0p5 << std::endl;
+        std::cout << "n1=" << n1 << std::endl;
+        std::cout << "n1p5=" << n1p5 << std::endl;
+        std::cout << "n2=" << n2 << std::endl;
+        std::cout << "n2p5=" << n2p5 << std::endl;
+
+        BOOST_TEST(LavaSolver::tight_n(-0.5) == n0p5);
+        BOOST_TEST(LavaSolver::tight_n(-1) == n1);
+        BOOST_TEST(LavaSolver::tight_n(-1.5) == n1p5);
+        BOOST_TEST(LavaSolver::tight_n(-2) == n2);
+        BOOST_TEST(LavaSolver::tight_n(-2.5) == n2p5);
+
+    }
+
+    BOOST_AUTO_TEST_CASE(tight_del_n) {
+
+        auto n0 = LavaSolver::tight_del_n(0);
+        auto n0p5 = LavaSolver::tight_del_n(0.5);
+        auto n1 = LavaSolver::tight_del_n(1);
+        auto n1p5 = LavaSolver::tight_del_n(1.5);
+        auto n2 = LavaSolver::tight_del_n(2);
+        auto n2p5 = LavaSolver::tight_del_n(2.5);
+
+        std::cout << "n0=" << n0 << std::endl;
+        std::cout << "n0p5=" << n0p5 << std::endl;
+        std::cout << "n1=" << n1 << std::endl;
+        std::cout << "n1p5=" << n1p5 << std::endl;
+        std::cout << "n2=" << n2 << std::endl;
+        std::cout << "n2p5=" << n2p5 << std::endl;
+
+        BOOST_TEST(LavaSolver::tight_del_n(-0.5) == -n0p5);
+        BOOST_TEST(LavaSolver::tight_del_n(-1) == -n1);
+        BOOST_TEST(LavaSolver::tight_del_n(-1.5) == -n1p5);
+        BOOST_TEST(LavaSolver::tight_del_n(-2) == -n2);
+        BOOST_TEST(LavaSolver::tight_del_n(-2.5) == -n2p5);
 
     }
 

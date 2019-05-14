@@ -18,7 +18,7 @@ struct LavaParticleNode : public Node {
         youngsModulus0 = 1.4e5;
         poissonsRatio = 0.2;
 
-        temperature = -5;
+        temperature = -1;
         thermalConductivity = 0.606;
         specificHeat = 4.184e3;
         fusionTemperature = 0;
