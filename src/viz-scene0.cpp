@@ -1,8 +1,8 @@
 #ifdef USE_RENDERBOX
 
 
-#include "utils/viz.h"
 #include "scenes/scene0.h"
+#include "utils/viz.h"
 
 
 void launchVizScene0(int argc, char const **argv) {

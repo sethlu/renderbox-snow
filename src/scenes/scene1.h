@@ -1,6 +1,10 @@
 #include "../../lib/Node.h"
 
 
+static auto simulationSize = glm::dvec3(1);
+static auto simulationReservedBoundary = 0.1;
+
+
 static void handleNodeCollisionVelocityUpdate(Node &node) {
 
     // Hard-coded floor collision & it's not moving anywhere

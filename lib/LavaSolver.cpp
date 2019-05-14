@@ -268,7 +268,7 @@ void LavaSolver::update() {
             cellNode.je = 0;
             cellNode.jp = 0;
             cellNode.specificHeat = 0;
-            cellNode.temperature = 20; // FIXME: Hardcoded room temperature
+            cellNode.temperature = 10; // FIXME: Hardcoded room temperature
             cellNode.inv_lambda = 0;
         }
     }
@@ -383,7 +383,7 @@ void LavaSolver::update() {
 
         if (cellColliding) {
             cellNode.type = COLLIDING;
-            cellNode.temperature = 100; // FIXME: Hard coded hot colliding surface
+            cellNode.temperature = 200; // FIXME: Hard coded hot colliding surface
             numGellNodesColliding++;
         } else if (cellInterior) {
             cellNode.type = INTERIOR;

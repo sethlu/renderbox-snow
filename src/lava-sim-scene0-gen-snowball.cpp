@@ -6,16 +6,16 @@
 
 #include "utils/common.h"
 #include "snow/sphere.h"
+#include "scenes/scene0.h"
 
 
-void lavaLaunchSimGenSnowball(int argc, char const **argv) {
+void lavaLaunchSimScene0GenSnowball(int argc, char const **argv) {
 
     // Simulation consts
 
-    double density = 400; // kg/m3
-    double particleSize = .0072;
+    double density = 1000; // kg/m3
+    double particleSize = .005;
     double gridSize = particleSize * 2;
-    auto simulationSize = glm::dvec3(1);
 
     // Init simulation
 
@@ -25,7 +25,8 @@ void lavaLaunchSimGenSnowball(int argc, char const **argv) {
 
     // Particles
 
-    genSnowSphere(glm::dvec3(0.5, 0.5, 0.3), 0.1, density, particleSize);
+    genSnowSphere(glm::dvec3(simulationSize.x / 2, simulationSize.y / 2, simulationSize.z / 2),
+                  0.025, density, particleSize);
 
     std::cout << "#particles=" << solver->particleNodes.size() << std::endl;
 

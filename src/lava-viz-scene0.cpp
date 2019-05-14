@@ -4,8 +4,8 @@
 #define SOLVER LavaSolver
 #define SOLVER_LAVA
 
-#include "utils/viz.h"
 #include "scenes/scene0.h"
+#include "utils/viz.h"
 
 
 void lavaLaunchVizScene0(int argc, char const **argv) {

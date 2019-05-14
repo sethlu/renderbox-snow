@@ -34,11 +34,19 @@ void launchRenderScene1(int argc, char const **argv);
 
 void lavaLaunchDemoSnowball(int argc, char const **argv);
 
-void lavaLaunchSimGenSnowball(int argc, char const **argv);
+void lavaLaunchDemoFloaty(int argc, char const **argv);
 
 void lavaLaunchSimScene0(int argc, char const **argv);
 
+void lavaLaunchSimScene0GenSnowball(int argc, char const **argv);
+
+void lavaLaunchSimScene2(int argc, char const **argv);
+
+void lavaLaunchSimScene2GenFloaty(int argc, char const **argv);
+
 void lavaLaunchVizScene0(int argc, char const **argv);
+
+void lavaLaunchVizScene2(int argc, char const **argv);
 
 int main(int argc, char const **argv) {
 
@@ -46,20 +54,18 @@ int main(int argc, char const **argv) {
 
     routines.insert(std::make_pair("info", launchInfo));
 
-    // Snow solver starting frame generation
+    // Snow solver
     routines.insert(std::make_pair("sim-gen-snowball", launchSimGenSnowball));
     routines.insert(std::make_pair("sim-gen-slab", launchSimGenSlab));
     routines.insert(std::make_pair("sim-gen-snowman", launchSimGenSnowman));
-
-    // Snow solver simulate
     routines.insert(std::make_pair("sim-scene0", launchSimScene0));
     routines.insert(std::make_pair("sim-scene1", launchSimScene1));
 
-    // "Lava" solver starting frame generation
-    routines.insert(std::make_pair("lava:sim-gen-snowball", lavaLaunchSimGenSnowball));
-
-    // "Lava" solver simulate
+    // "Lava" solver
     routines.insert(std::make_pair("lava:sim-scene0", lavaLaunchSimScene0));
+    routines.insert(std::make_pair("lava:sim-scene0-gen-snowball", lavaLaunchSimScene0GenSnowball));
+    routines.insert(std::make_pair("lava:sim-scene2", lavaLaunchSimScene2));
+    routines.insert(std::make_pair("lava:sim-scene2-gen-floaty", lavaLaunchSimScene2GenFloaty));
 
 #if USE_RENDERBOX
 
@@ -71,6 +77,7 @@ int main(int argc, char const **argv) {
 
     // "Lava" solver demos
     routines.insert(std::make_pair("lava:demo-snowball", lavaLaunchDemoSnowball));
+    routines.insert(std::make_pair("lava:demo-floaty", lavaLaunchDemoFloaty));
 
     // Snow solver visualizations
     routines.insert(std::make_pair("viz-scene0", launchVizScene0));
@@ -81,6 +88,7 @@ int main(int argc, char const **argv) {
 
     // "Lava" solver visualizations
     routines.insert(std::make_pair("lava:viz-scene0", lavaLaunchVizScene0));
+    routines.insert(std::make_pair("lava:viz-scene2", lavaLaunchVizScene2));
 
 #endif //USE_RENDERBOX
 

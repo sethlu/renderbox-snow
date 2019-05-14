@@ -13,6 +13,7 @@
 #include "../lib/LavaSolver.h"
 #include "scenes/scene2.h"
 #include "snow/sphere.h"
+#include "snow/slab.h"
 #include "utils/renderer.h"
 
 
@@ -27,13 +28,13 @@ static void demoRenderLoopUpdate(unsigned int frame) {
 
 }
 
-void lavaLaunchDemoSnowball(int argc, char const **argv) {
+void lavaLaunchDemoFloaty(int argc, char const **argv) {
 
     // Simulation
 
     double density = 1000; // kg/m3
     double particleSize = .005;
-    double gridSize = particleSize * 2;
+    double gridSize = particleSize * 4;
 
     solver.reset(new LavaSolver(gridSize, simulationSize * (1 / gridSize)));
     solver->delta_t = 5e-4;
@@ -41,8 +42,17 @@ void lavaLaunchDemoSnowball(int argc, char const **argv) {
     solver->isNodeColliding = isNodeColliding;
     solver->handleNodeCollisionVelocityUpdate = handleNodeCollisionVelocityUpdate;
 
-    genSnowSphere(glm::dvec3(simulationSize.x / 2, simulationSize.y / 2, 0.06),
-                  0.025, density, particleSize);
+    genSnowSlab(glm::dvec3(simulationReservedBoundary),
+                glm::dvec3(simulationSize.x - simulationReservedBoundary,
+                           simulationSize.y - simulationReservedBoundary,
+                           simulationSize.z * 0.2),
+                density, particleSize);
+    for (auto &particleNode : solver->particleNodes) {
+        particleNode.temperature = 10; // Low temperature water
+    }
+
+    genSnowSphere(glm::dvec3(simulationSize.x / 2, simulationSize.y / 2, simulationSize.z * 3 / 4), 0.02, density,
+                  particleSize);
 
     // Rendering
 
@@ -50,7 +60,7 @@ void lavaLaunchDemoSnowball(int argc, char const **argv) {
     cameraDistance = 0.5;
 
     // Override geometry
-    snowParticleGeometry = std::make_shared<renderbox::SphereGeometry>(particleSize / 4);
+    snowParticleGeometry = std::make_shared<renderbox::SphereGeometry>(.005 / 4);
 
     // Override materials
     lavaParticleLiquidMaterial = std::make_shared<renderbox::MeshLambertMaterial>(

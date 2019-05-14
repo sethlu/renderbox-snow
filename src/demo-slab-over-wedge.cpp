@@ -7,9 +7,9 @@
 
 #include "renderbox.h"
 
-#include "utils/renderer.h"
 #include "scenes/scene1.h"
 #include "snow/slab.h"
+#include "utils/renderer.h"
 
 
 static unsigned ticksPerFrame = 1;

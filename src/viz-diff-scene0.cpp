@@ -1,7 +1,7 @@
 #ifdef USE_RENDERBOX
 
-#include "utils/viz-diff.h"
 #include "scenes/scene0.h"
+#include "utils/viz-diff.h"
 
 
 void launchVizDiffScene0(int argc, char const **argv) {
