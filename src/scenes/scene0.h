@@ -1,4 +1,8 @@
-#include "../../lib/SnowSolver.h"
+#include "../../lib/Node.h"
+
+
+static auto simulationSize = glm::dvec3(1);
+static auto simulationReservedBoundary = 0.1;
 
 
 static void handleNodeCollisionVelocityUpdate(Node &node) {
@@ -32,6 +36,16 @@ static void handleNodeCollisionVelocityUpdate(Node &node) {
 
     }
 
+}
+
+
+static bool isNodeColliding(Node &node) {
+
+    if (node.position.z <= 0.1) {
+        return true;
+    }
+
+    return false;
 }
 
 

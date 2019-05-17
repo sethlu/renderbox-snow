@@ -1,10 +1,24 @@
 #ifndef SNOW_COMMON_H
 #define SNOW_COMMON_H
 
+#ifndef SOLVER
+#define SOLVER SnowSolver
+#define SOLVER_SNOW
+#endif
 
-static std::unique_ptr<SnowSolver> solver;
+#ifdef SOLVER_LAVA
+#define SOLVER_STATE_EXT ".lavastate"
+#else
+#define SOLVER_STATE_EXT ".snowstate"
+#endif
 
-static std::unique_ptr<SnowSolver> ghostSolver; // Alternative solver for diffing purposes
+#include "../../lib/SnowSolver.h"
+#include "../../lib/LavaSolver.h"
+
+
+static std::unique_ptr<SOLVER> solver;
+
+static std::unique_ptr<SOLVER> ghostSolver; // Alternative solver for diffing purposes
 
 
 inline double randNumber(double lo, double hi) {

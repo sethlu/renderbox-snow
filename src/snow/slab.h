@@ -1,6 +1,5 @@
 #include <cmath>
 
-#include "../../lib/SnowSolver.h"
 #include "../utils/common.h"
 
 

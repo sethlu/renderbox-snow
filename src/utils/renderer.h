@@ -31,6 +31,8 @@ static std::shared_ptr<renderbox::Object> ghostParticles;
 static std::shared_ptr<renderbox::Geometry> snowParticleGeometry;
 static std::shared_ptr<renderbox::Material> snowParticleMaterial;
 static std::shared_ptr<renderbox::Material> ghostSnowParticleMaterial;
+static std::shared_ptr<renderbox::Material> lavaParticleLiquidMaterial;
+static std::shared_ptr<renderbox::Material> lavaParticlePhaseChangeMaterial;
 
 static GLFWwindow *window;
 
@@ -44,7 +46,8 @@ static double cameraAngle[] = {0.0, 80.0};
 
 static void windowSizeCallback(GLFWwindow *window, int width, int height) {
     camera->setPerspective(glm::radians(45.0f),
-                           (float) renderTarget->getWindowWidth() / (float) renderTarget->getWindowHeight());
+                           (float) renderTarget->getWindowWidth() / (float) renderTarget->getWindowHeight(),
+                           0.01f, 10000.f);
 }
 
 static void keyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods) {
@@ -78,6 +81,16 @@ static void updateVizParticlePositions() {
     auto numParticles = solver->particleNodes.size();
     for (auto i = 0; i < numParticles; i++) {
         particles->children[i]->setTranslation(solver->particleNodes[i].position);
+
+#ifdef SOLVER_LAVA
+        if (solver->particleNodes[i].temperature > solver->particleNodes[i].fusionTemperature + FLT_EPSILON) {
+            particles->children[i]->setMaterial(lavaParticleLiquidMaterial);
+        } else if (solver->particleNodes[i].temperature < solver->particleNodes[i].fusionTemperature - FLT_EPSILON) {
+            particles->children[i]->setMaterial(snowParticleMaterial);
+        } else {
+            particles->children[i]->setMaterial(lavaParticlePhaseChangeMaterial);
+        }
+#endif
     }
 
     if (ghostSolver) {
@@ -113,6 +126,7 @@ static void initRenderer() {
     // Scene
 
     scene = std::make_shared<renderbox::Scene>();
+    scene->setAmbientColor({0.1, 0.1, 0.1});
 
     // Light
 
@@ -125,14 +139,16 @@ static void initRenderer() {
     cameraRig = std::make_shared<renderbox::Object>();
 
 #ifndef VIZ_RENDER
-    cameraRig->setTranslation({simulationSize.x / 2, simulationSize.y / 2, 0.1});
+    cameraRig->setTranslation({simulationSize.x / 2, simulationSize.y / 2, simulationReservedBoundary});
 #else
     cameraRig->setTranslation({simulationSize.x / 2, simulationSize.y / 2, simulationSize.z / 2});
     cameraAngle[1] = 90;
 #endif //VIZ_RENDER
 
     camera = std::make_shared<renderbox::PerspectiveCamera>(
-            glm::radians(45.0), (double) renderTarget->getWindowWidth() / (double) renderTarget->getWindowHeight());
+            glm::radians(45.0),
+            (double) renderTarget->getWindowWidth() / (double) renderTarget->getWindowHeight(),
+            0.01f, 10000.f);
     cameraRig->addChild(camera);
     camera->setTranslation(glm::dvec3(0, 0, cameraDistance));
 
@@ -145,13 +161,22 @@ static void initRenderer() {
 
     // Particles
 
-    snowParticleGeometry = std::make_shared<renderbox::BoxGeometry>(solver->h / 2, solver->h / 2, solver->h / 2);
+    if (!snowParticleGeometry) snowParticleGeometry = std::make_shared<renderbox::SphereGeometry>(solver->h / 4);
+
     if (!ghostSolver) {
         snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 1, 1));
     } else {
-        snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 0, 0));
-        ghostSnowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(0, 1, 0));
+        snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 0, 0),
+                                                                                renderbox::vec3(1, 0, 0));
+        ghostSnowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(0, 1, 0),
+                                                                                     renderbox::vec3(0, 1, 0));
     }
+    if (!lavaParticleLiquidMaterial)
+        lavaParticleLiquidMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(0, 0, 1),
+                                                                                      renderbox::vec3(0, 0, 1));
+    if (!lavaParticlePhaseChangeMaterial)
+        lavaParticlePhaseChangeMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(0, 1, 0),
+                                                                                           renderbox::vec3(0, 1, 0));
 
     particles = std::make_shared<renderbox::Object>();
     scene->addChild(particles);

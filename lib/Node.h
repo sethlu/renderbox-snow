@@ -7,38 +7,17 @@
 #include "logging.h"
 
 
-class Node {
+struct Node {
 
-    friend class SnowSolver;
-
-public:
-
-    Node(glm::dvec3 const &position) : position(position) {}
+    explicit Node(glm::dvec3 const &position) : position(position) {}
 
     glm::dvec3 position;
 
-    glm::dvec3 const &velocity(unsigned int n) const {
-        if ((n & 0x1) == 0) {
-            return velocity0;
-        }
-        return velocity1;
-    }
+    double mass{};
 
-    glm::dvec3 &velocity(unsigned int n) {
-        if ((n & 0x1) == 0) {
-            return velocity0;
-        }
-        return velocity1;
-    }
-
-    // Used for updates
-    glm::dvec3 velocity_star;
-
-protected:
-
-    double mass;
-    glm::dvec3 velocity0 = glm::dvec3();
-    glm::dvec3 velocity1 = glm::dvec3();
+    // TODO: The 3d velocity is somewhat a waste for LavaGridFaceNode since there's only one degree of freedom
+    glm::dvec3 velocity{};
+    glm::dvec3 velocity_star{}; // Intermediate velocity (for collision handling)
 
 };
 

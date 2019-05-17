@@ -3,8 +3,6 @@
 
 #include <sstream>
 
-#include "../../lib/SnowSolver.h"
-
 #include "renderer.h"
 
 
@@ -26,10 +24,10 @@ static void initVizDiff(int argc, char const **argv) {
     dirB = argv[3];
 
     std::ostringstream filename;
-    filename << "frame-" << startFrame << ".snowstate";
+    filename << "frame-" << startFrame << SOLVER_STATE_EXT;
 
-    solver.reset(new SnowSolver(joinPath(dirA, filename.str())));
-    ghostSolver.reset(new SnowSolver(joinPath(dirB, filename.str())));
+    solver.reset(new SOLVER(joinPath(dirA, filename.str())));
+    ghostSolver.reset(new SOLVER(joinPath(dirB, filename.str())));
 
     // Rendering
 
@@ -41,7 +39,7 @@ static void vizDiffRenderLoopUpdate(unsigned int frame) {
 
     unsigned int wrappedFrame = startFrame + frame % (endFrame - startFrame);
     std::ostringstream filename;
-    filename << "frame-" << wrappedFrame << ".snowstate";
+    filename << "frame-" << wrappedFrame << SOLVER_STATE_EXT;
 
     solver->loadState(joinPath(dirA, filename.str()));
     ghostSolver->loadState(joinPath(dirB, filename.str()));

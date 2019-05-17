@@ -7,10 +7,9 @@
 
 #include "renderbox.h"
 
-#include "../lib/SnowSolver.h"
-#include "utils/renderer.h"
 #include "scenes/scene0.h"
 #include "snow/sphere.h"
+#include "utils/renderer.h"
 
 
 static unsigned ticksPerFrame = 1;
@@ -34,6 +33,7 @@ void launchDemoSnowball(int argc, char const **argv) {
     auto simulationSize = glm::dvec3(1);
 
     solver.reset(new SnowSolver(gridSize, simulationSize * (1 / gridSize)));
+    solver->delta_t = 5e-4;
 
     genSnowSphere(glm::dvec3(0.5, 0.5, 0.5), 0.06, density, particleSize);
 

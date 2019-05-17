@@ -10,6 +10,7 @@ namespace tt = boost::test_tools;
 
 #include "../lib/conjugate_residual_solver.h"
 #include "../lib/SnowSolver.h"
+#include "../lib/LavaSolver.h"
 
 
 // A[3x3]
@@ -43,7 +44,7 @@ BOOST_AUTO_TEST_SUITE(test_conjugate_gradient_method)
         std::vector<double> x = {0, 0, 0};
 
         // Solve Ax = b
-        conjugateResidualSolver(A, x, b, 2000, 0.001);
+        conjugateResidualSolver(A, x, b, 2000);
 
         BOOST_TEST(x[0] == 0.25);
         BOOST_TEST(x[1] == 0.25);
@@ -64,7 +65,7 @@ BOOST_AUTO_TEST_SUITE(test_conjugate_gradient_method)
         };
 
         // Solve Ax = b
-        conjugateResidualSolver(B, x, b, 2000, 0.001);
+        conjugateResidualSolver(B, x, b, 2000);
 
         BOOST_TEST(x[0][0] == 0.25);
         BOOST_TEST(x[0][1] == 0.25);
@@ -77,7 +78,7 @@ BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(test_n)
 
-    BOOST_AUTO_TEST_CASE(test1) {
+    BOOST_AUTO_TEST_CASE(n) {
 
         auto n0 = SnowSolver::n(0);
         auto n0p5 = SnowSolver::n(0.5);
@@ -101,7 +102,7 @@ BOOST_AUTO_TEST_SUITE(test_n)
 
     }
 
-    BOOST_AUTO_TEST_CASE(test2) {
+    BOOST_AUTO_TEST_CASE(del_n) {
 
         auto n0 = SnowSolver::del_n(0);
         auto n0p5 = SnowSolver::del_n(0.5);
@@ -132,6 +133,106 @@ BOOST_AUTO_TEST_SUITE(test_n)
         BOOST_TEST(SnowSolver::del_n(-1.5) == -n1p5);
         BOOST_TEST(SnowSolver::del_n(-2) == -n2);
         BOOST_TEST(SnowSolver::del_n(-2.5) == -n2p5);
+
+    }
+
+    BOOST_AUTO_TEST_CASE(tight_n) {
+
+        auto n0 = LavaSolver::tight_n(0);
+        auto n0p5 = LavaSolver::tight_n(0.5);
+        auto n1 = LavaSolver::tight_n(1);
+        auto n1p5 = LavaSolver::tight_n(1.5);
+        auto n2 = LavaSolver::tight_n(2);
+        auto n2p5 = LavaSolver::tight_n(2.5);
+
+        std::cout << "n0=" << n0 << std::endl;
+        std::cout << "n0p5=" << n0p5 << std::endl;
+        std::cout << "n1=" << n1 << std::endl;
+        std::cout << "n1p5=" << n1p5 << std::endl;
+        std::cout << "n2=" << n2 << std::endl;
+        std::cout << "n2p5=" << n2p5 << std::endl;
+
+        BOOST_TEST(LavaSolver::tight_n(-0.5) == n0p5);
+        BOOST_TEST(LavaSolver::tight_n(-1) == n1);
+        BOOST_TEST(LavaSolver::tight_n(-1.5) == n1p5);
+        BOOST_TEST(LavaSolver::tight_n(-2) == n2);
+        BOOST_TEST(LavaSolver::tight_n(-2.5) == n2p5);
+
+    }
+
+    BOOST_AUTO_TEST_CASE(tight_del_n) {
+
+        auto n0 = LavaSolver::tight_del_n(0);
+        auto n0p5 = LavaSolver::tight_del_n(0.5);
+        auto n1 = LavaSolver::tight_del_n(1);
+        auto n1p5 = LavaSolver::tight_del_n(1.5);
+        auto n2 = LavaSolver::tight_del_n(2);
+        auto n2p5 = LavaSolver::tight_del_n(2.5);
+
+        std::cout << "n0=" << n0 << std::endl;
+        std::cout << "n0p5=" << n0p5 << std::endl;
+        std::cout << "n1=" << n1 << std::endl;
+        std::cout << "n1p5=" << n1p5 << std::endl;
+        std::cout << "n2=" << n2 << std::endl;
+        std::cout << "n2p5=" << n2p5 << std::endl;
+
+        BOOST_TEST(LavaSolver::tight_del_n(-0.5) == -n0p5);
+        BOOST_TEST(LavaSolver::tight_del_n(-1) == -n1);
+        BOOST_TEST(LavaSolver::tight_del_n(-1.5) == -n1p5);
+        BOOST_TEST(LavaSolver::tight_del_n(-2) == -n2);
+        BOOST_TEST(LavaSolver::tight_del_n(-2.5) == -n2p5);
+
+    }
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(test_temperature)
+
+    BOOST_AUTO_TEST_CASE(test_small_increments) {
+
+        LavaParticleNode node({}, 1);
+        node.temperature = 20;
+
+        while (node.temperature < 50) {
+            LavaSolver::applyTemperatureDifference(node, 1);
+            std::cout << node.temperature << " " << node.latentHeat << std::endl;
+        }
+
+    }
+
+    BOOST_AUTO_TEST_CASE(test_large_increments) {
+
+        LavaParticleNode node({}, 1);
+        node.temperature = 20;
+
+        while (node.temperature < 50) {
+            LavaSolver::applyTemperatureDifference(node, 50);
+            std::cout << node.temperature << " " << node.latentHeat << std::endl;
+        }
+
+    }
+
+    BOOST_AUTO_TEST_CASE(test_small_decrements) {
+
+        LavaParticleNode node({}, 1);
+        node.temperature = 50;
+
+        while (node.temperature > 20) {
+            LavaSolver::applyTemperatureDifference(node, -1);
+            std::cout << node.temperature << " " << node.latentHeat << std::endl;
+        }
+
+    }
+
+    BOOST_AUTO_TEST_CASE(test_large_decrements) {
+
+        LavaParticleNode node({}, 1);
+        node.temperature = 50;
+
+        while (node.temperature > 20) {
+            LavaSolver::applyTemperatureDifference(node, -50);
+            std::cout << node.temperature << " " << node.latentHeat << std::endl;
+        }
 
     }
 

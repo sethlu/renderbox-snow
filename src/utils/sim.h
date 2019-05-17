@@ -6,8 +6,6 @@
 #include <sstream>
 #include <chrono>
 
-#include "../../lib/SnowSolver.h"
-
 #include "common.h"
 
 
@@ -24,8 +22,8 @@ static void initSim(int argc, char const **argv) {
     // Simulation
 
     std::ostringstream filename;
-    filename << "frame-" << timedFrames << ".snowstate";
-    solver.reset(new SnowSolver(filename.str()));
+    filename << "frame-" << timedFrames << SOLVER_STATE_EXT;
+    solver.reset(new SOLVER(filename.str()));
 
 }
 
@@ -47,7 +45,7 @@ static void startSimLoop() {
             timedFrames++;
 
             std::ostringstream filename;
-            filename << "frame-" << timedFrames << ".snowstate";
+            filename << "frame-" << timedFrames << SOLVER_STATE_EXT;
             solver->saveState(filename.str());
 
             std::cout << "Frame " << timedFrames << " written to: " << filename.str() << std::endl;
