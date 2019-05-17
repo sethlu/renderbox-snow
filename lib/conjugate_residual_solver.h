@@ -100,7 +100,7 @@ inline void conjugateResidualSolver(void (*A)(std::vector<V> &Ax, std::vector<V>
     std::vector<V> Ap(b.size());
     A(Ap, p);
 
-    while (k-- > 0) {
+    while (k-- > 0 && r * r >= FLT_EPSILON) {
         LOG(VERBOSE) << "Solving k=" << k << std::endl;
 
         // r_k^T Ar_k
@@ -172,7 +172,7 @@ inline void conjugateResidualSolver(C *instance,
     std::vector<V> Ap(b.size());
     (instance->*A)(Ap, p);
 
-    while (k-- > 0) {
+    while (k-- > 0 && r * r >= FLT_EPSILON) {
         LOG(VERBOSE) << "Solving k=" << k << std::endl;
 
         // r_k^T Ar_k
