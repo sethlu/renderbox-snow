@@ -37,7 +37,11 @@ void lavaLaunchSimScene2GenFloaty(int argc, char const **argv) {
 
     genSnowSphere(glm::dvec3(simulationSize.x / 2 - 0.01, simulationSize.y / 2, simulationSize.z * 0.275),
                   0.03, density, particleSize);
-    genSnowSphere(glm::dvec3(simulationSize.x / 2 + 0.01, simulationSize.y / 2, simulationSize.z * 0.4),
+    genSnowSphere(glm::dvec3(simulationSize.x / 2 + 0.01, simulationSize.y / 2, simulationSize.z * (0.275 + 0.125)),
+                  0.03, density, particleSize);
+    genSnowSphere(glm::dvec3(simulationSize.x / 2 - 0.01, simulationSize.y / 2, simulationSize.z * (0.275 + 2 * 0.125)),
+                  0.03, density, particleSize);
+    genSnowSphere(glm::dvec3(simulationSize.x / 2 + 0.01, simulationSize.y / 2, simulationSize.z * (0.275 + 3 * 0.125)),
                   0.03, density, particleSize);
 
     std::cout << "#particles=" << solver->particleNodes.size() << std::endl;

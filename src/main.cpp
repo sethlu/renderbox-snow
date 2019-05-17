@@ -48,6 +48,8 @@ void lavaLaunchVizScene0(int argc, char const **argv);
 
 void lavaLaunchVizScene2(int argc, char const **argv);
 
+void lavaLaunchRenderScene2(int argc, char const **argv);
+
 int main(int argc, char const **argv) {
 
     std::map<std::string, void (*)(int argc, char const **argv)> routines;
@@ -89,6 +91,7 @@ int main(int argc, char const **argv) {
     // "Lava" solver visualizations
     routines.insert(std::make_pair("lava:viz-scene0", lavaLaunchVizScene0));
     routines.insert(std::make_pair("lava:viz-scene2", lavaLaunchVizScene2));
+    routines.insert(std::make_pair("lava:render-scene2", lavaLaunchRenderScene2));
 
 #endif //USE_RENDERBOX
 

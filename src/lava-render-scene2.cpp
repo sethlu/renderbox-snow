@@ -4,18 +4,18 @@
 #define SOLVER LavaSolver
 #define SOLVER_LAVA
 
+#include "utils/viz-render.h"
 #include "scenes/scene2.h"
-#include "utils/viz.h"
 
 
-void lavaLaunchVizScene2(int argc, char const **argv) {
+void lavaLaunchRenderScene2(int argc, char const **argv) {
     if (argc < 5) {
-        std::cout << "Usage: ./snow lava:viz-scene2 dir frame end-frame" << std::endl;
+        std::cout << "Usage: ./snow render-scene2 dir frame end-frame" << std::endl;
         exit(1);
     }
 
     // Override camera settings
-    cameraDistance = 0.5;
+    cameraDistance = 0.8;
 
     // Override geometry
     snowParticleGeometry = std::make_shared<renderbox::SphereGeometry>(.005 / 4);
