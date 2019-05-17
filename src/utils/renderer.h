@@ -161,7 +161,7 @@ static void initRenderer() {
 
     // Particles
 
-    if (!snowParticleGeometry) snowParticleGeometry = std::make_shared<renderbox::SphereGeometry>(0.0025);
+    if (!snowParticleGeometry) snowParticleGeometry = std::make_shared<renderbox::SphereGeometry>(solver->h / 4);
 
     if (!ghostSolver) {
         snowParticleMaterial = std::make_shared<renderbox::MeshLambertMaterial>(renderbox::vec3(1, 1, 1));
