@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 # RenderBox visualization only supports some platforms
 
-if (APPLE)
+if (UNIX)
     set(USE_RENDERBOX YES)
 endif ()
 

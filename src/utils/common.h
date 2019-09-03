@@ -1,6 +1,8 @@
 #ifndef SNOW_COMMON_H
 #define SNOW_COMMON_H
 
+#include <memory>
+
 #ifndef SOLVER
 #define SOLVER SnowSolver
 #define SOLVER_SNOW

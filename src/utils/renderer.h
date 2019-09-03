@@ -1,6 +1,8 @@
 #ifndef SNOW_RENDERER_H
 #define SNOW_RENDERER_H
 
+#include <chrono>
+
 #ifndef USE_RENDERBOX
 #error "RenderBox is required for viz"
 #endif //USE_RENDERBOX
