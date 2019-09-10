@@ -200,7 +200,7 @@ public:
                                        latentEnergyOfFusion / node.mass /
                                        node.specificHeat; // Compensate for phase change
                 } else {
-                    node.latentHeat = node.latentHeatOfFusion - joules;
+                    node.latentHeat = latentEnergyOfFusion - joules;
                     node.temperature = node.fusionTemperature;
                 }
             }

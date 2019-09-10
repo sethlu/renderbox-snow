@@ -273,7 +273,7 @@ void LavaSolver::update() {
             cellNode.je = 0;
             cellNode.jp = 0;
             cellNode.specificHeat = 0;
-            cellNode.temperature = 10; // FIXME: Hardcoded room temperature
+            cellNode.temperature = 0; // FIXME: This temperature should have no effect on the simulation?
             cellNode.inv_lambda = 0;
         }
     }
