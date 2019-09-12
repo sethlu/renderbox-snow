@@ -39,6 +39,7 @@ static std::shared_ptr<renderbox::Material> lavaParticlePhaseChangeMaterial;
 static GLFWwindow *window;
 
 const double CAMERA_ANGLE_MOUSE_SENSITIVITY = 0.5;
+const double CAMERA_DISTANCE_SCROLL_SENSITIVITY = 0.1;
 static int keyMods = 0;
 static bool leftMouseButtonDown = false;
 
@@ -74,7 +75,7 @@ static void scrollCallback(GLFWwindow *window, double deltaX, double deltaY) {
 #elif defined(RENDERBOX_OS_LINUX)
 
     // Zooming on Linux
-    double magnification = deltaY;
+    double magnification = deltaY * CAMERA_DISTANCE_SCROLL_SENSITIVITY;
     cameraDistance /= (1 + magnification);
     camera->setTranslation(glm::vec3(0, 0, cameraDistance));
 
