@@ -38,7 +38,9 @@ static std::shared_ptr<renderbox::Material> lavaParticlePhaseChangeMaterial;
 
 static GLFWwindow *window;
 
+const double CAMERA_ANGLE_MOUSE_SENSITIVITY = 0.5;
 static int keyMods = 0;
+static bool leftMouseButtonDown = false;
 
 static double cameraDistance = 2;
 static double cameraAngle[] = {0.0, 80.0};
@@ -57,6 +59,9 @@ static void keyCallback(GLFWwindow *window, int key, int scanCode, int action, i
 }
 
 static void scrollCallback(GLFWwindow *window, double deltaX, double deltaY) {
+#if defined(RENDERBOX_OS_MACOS)
+
+    // Panning on macOS
     auto cameraDirection = camera->getRay(renderbox::vec2()).getDirection();
     auto forward = glm::normalize(glm::dvec3(cameraDirection.x, cameraDirection.y, 0));
     auto right = glm::normalize(glm::dvec3(cameraDirection.y, -cameraDirection.x, 0));
@@ -65,15 +70,52 @@ static void scrollCallback(GLFWwindow *window, double deltaX, double deltaY) {
         return;
     }
     cameraRig->translate((forward * deltaY - right * deltaX) * cameraDistance * 0.01);
+
+#elif defined(RENDERBOX_OS_LINUX)
+
+    // Zooming on Linux
+    double magnification = deltaY;
+    cameraDistance /= (1 + magnification);
+    camera->setTranslation(glm::vec3(0, 0, cameraDistance));
+
+#endif
 }
 
+// macOS only
 static void zoomCallback(GLFWwindow *window, double magnification) {
     cameraDistance /= (1 + magnification);
     camera->setTranslation(glm::vec3(0, 0, cameraDistance));
 }
 
+// macOS only
 static void rotateCallback(GLFWwindow *window, double rotation) {
     cameraAngle[0] += -rotation;
+}
+
+static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+            leftMouseButtonDown = true;
+        } else if (action == GLFW_RELEASE) {
+            leftMouseButtonDown = false;
+        }
+    }
+}
+
+static double prevX = 0;
+static double prevY = 0;
+
+static void cursorPosCallback(GLFWwindow *window, double x, double y) {
+    if (leftMouseButtonDown) {
+        double deltaX = x - prevX;
+        double deltaY = y - prevY;
+
+        cameraAngle[0] -= deltaX * CAMERA_ANGLE_MOUSE_SENSITIVITY;
+        cameraAngle[1] -= deltaY * CAMERA_ANGLE_MOUSE_SENSITIVITY;
+    }
+
+    prevX = x;
+    prevY = y;
 }
 
 #endif //VIZ_RENDER
@@ -121,8 +163,10 @@ static void initRenderer() {
     glfwSetWindowSizeCallback(window, windowSizeCallback);
     glfwSetKeyCallback(window, keyCallback);
     glfwSetScrollCallback(window, scrollCallback);
-    glfwSetZoomCallback(window, zoomCallback);
-    glfwSetRotateCallback(window, rotateCallback);
+    glfwSetZoomCallback(window, zoomCallback); // macOS only
+    glfwSetRotateCallback(window, rotateCallback); // macOS only
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
+    glfwSetCursorPosCallback(window, cursorPosCallback);
 #endif //VIZ_RENDER
 
     // Scene
